@@ -6,7 +6,7 @@ require github.com/struqt/txn v0.0.0
 
 replace github.com/struqt/txn => ../../txn
 
-require github.com/struqt/x v0.2.0
+require github.com/struqt/x v0.3.1
 
 require github.com/lib/pq v1.10.9
 

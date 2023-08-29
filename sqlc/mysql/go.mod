@@ -8,7 +8,7 @@ replace github.com/struqt/txn => ../../txn
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/struqt/x v0.2.0
+	github.com/struqt/x v0.3.1
 )
 
 require (

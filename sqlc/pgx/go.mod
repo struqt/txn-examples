@@ -4,15 +4,15 @@ go 1.20
 
 require github.com/struqt/txn v0.0.0 // indirect
 
-replace github.com/struqt/txn => ../../txn
-
 require github.com/struqt/txn/txn_pgx v0.0.0
+
+replace github.com/struqt/txn => ../../txn
 
 replace github.com/struqt/txn/txn_pgx => ../../txn/txn_pgx
 
 require (
 	github.com/jackc/pgx/v5 v5.4.3
-	github.com/struqt/x v0.2.0
+	github.com/struqt/x v0.3.1
 )
 
 require (

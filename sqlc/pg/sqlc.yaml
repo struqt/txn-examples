@@ -1,0 +1,11 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    gen:
+      go:
+        sql_package: "database/sql"
+        emit_prepared_queries: true
+        out: "demo"
+        package: "demo"
+    schema: "demo.sql"
+    queries: "demo.sql"

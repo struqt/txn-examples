@@ -1,0 +1,11 @@
+version: 2
+sql:
+  - engine: "mysql"
+    queries: "demo.sql"
+    schema: "demo.sql"
+    gen:
+      go:
+        package: "demo"
+        out: "demo"
+        sql_package: "database/sql"
+        emit_prepared_queries: true

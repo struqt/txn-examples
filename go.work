@@ -1,0 +1,9 @@
+go 1.21
+
+use (
+	txn
+	txn/txn_pgx
+	sqlc/pgx
+	sqlc/pg
+	sqlc/mysql
+)

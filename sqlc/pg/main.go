@@ -9,15 +9,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/struqt/logging"
 	"github.com/struqt/txn/txn_sql"
-	"github.com/struqt/x/logging"
-)
-
-import (
-	"examples/sqlc/pg/demo"
 )
 
 import _ "github.com/lib/pq"
+import "examples/sqlc/pg/demo"
 
 var log = logging.NewLogger("")
 

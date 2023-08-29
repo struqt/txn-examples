@@ -1,7 +1,5 @@
 package main
 
-import _ "github.com/go-sql-driver/mysql"
-
 import (
 	"context"
 	"database/sql"
@@ -11,11 +9,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/struqt/logging"
 	"github.com/struqt/txn/txn_sql"
-	"github.com/struqt/x/logging"
-
-	"examples/sqlc/mysql/demo"
 )
+
+import _ "github.com/go-sql-driver/mysql"
+import "examples/sqlc/mysql/demo"
 
 var log = logging.NewLogger("")
 

@@ -1,6 +1,7 @@
 go 1.21
 
 use (
+	logging
 	txn
 	txn/txn_pgx
 	sqlc/pgx

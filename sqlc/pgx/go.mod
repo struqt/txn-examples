@@ -2,18 +2,19 @@ module examples/sqlc/pgx
 
 go 1.20
 
-require github.com/struqt/txn v0.0.0 // indirect
+require github.com/struqt/logging v0.0.0
+
+replace github.com/struqt/logging => ../../logging
 
 require github.com/struqt/txn/txn_pgx v0.0.0
 
-replace github.com/struqt/txn => ../../txn
-
 replace github.com/struqt/txn/txn_pgx => ../../txn/txn_pgx
 
-require (
-	github.com/jackc/pgx/v5 v5.4.3
-	github.com/struqt/x v0.3.1
-)
+require github.com/struqt/txn v0.0.0 // indirect
+
+replace github.com/struqt/txn => ../../txn
+
+require github.com/jackc/pgx/v5 v5.4.3
 
 require (
 	github.com/go-logr/logr v1.2.4 // indirect

@@ -1,3 +1,6 @@
+[submodule "logging"]
+	path = logging
+	url = git@github.com:struqt/logging.git
 [submodule "txn"]
 	path = txn
 	url = git@github.com:struqt/txn.git

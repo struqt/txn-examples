@@ -2,14 +2,15 @@ module examples/sqlc/mysql
 
 go 1.20
 
+require github.com/struqt/logging v0.0.0
+
+replace github.com/struqt/logging => ../../logging
+
 require github.com/struqt/txn v0.0.0
 
 replace github.com/struqt/txn => ../../txn
 
-require (
-	github.com/go-sql-driver/mysql v1.7.1
-	github.com/struqt/x v0.3.1
-)
+require github.com/go-sql-driver/mysql v1.7.1
 
 require (
 	github.com/go-logr/logr v1.2.4 // indirect

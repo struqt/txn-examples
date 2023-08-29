@@ -1,0 +1,53 @@
+## Require Docker Engine release 18.06.0+
+version: "3.7"
+
+### Create network: % docker network create -d bridge --subnet=192.168.168.0/24 --gateway=192.168.168.1 proxy
+networks: { proxy: { external: true, name: proxy } }
+
+services:
+
+  example-postgres:
+    container_name: example-postgres
+    hostname: postgres
+    image: postgres:13.12-alpine
+    restart: unless-stopped
+    user: root
+    read_only: true
+    logging: { driver: local, options: { max-size: 32m, max-file: 16 } }
+    tmpfs: [ /tmp ]
+    volumes:
+      - "./postgres/run:/var/run/postgresql"
+      - "./postgres/data:/var/lib/postgresql/data"
+    environment:
+      - "POSTGRES_DB=example"
+      - "POSTGRES_USER=example"
+      - "POSTGRES_PASSWORD=Example#123789"
+    ports:
+      - "5432:5432"
+    networks: { proxy: { } }
+  # example-postgres ##########################################################
+
+  example-mysql:
+    container_name: example-mysql
+    hostname: mysql
+    image: mysql:5.7.42-debian
+    restart: unless-stopped
+    user: root
+    read_only: true
+    tmpfs: [ /tmp ]
+    volumes:
+      - "./mysql/run:/var/run/mysqld"
+      - "./mysql/data:/var/lib/mysql"
+    environment:
+      - "TZ=UTC"
+      - "MYSQL_RANDOM_ROOT_PASSWORD"
+      - "MYSQL_DATABASE=example"
+      - "MYSQL_USER=example"
+      - "MYSQL_PASSWORD=Example#123789"
+    ports:
+      - "3306:3306"
+    networks: { proxy: { } }
+  # example-mysql #############################################################
+
+# services
+# 2023-08-29

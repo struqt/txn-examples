@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/struqt/logging v0.0.0-20230830051957-37f9d79d2d35
-	github.com/struqt/txn v0.0.0-20230830051924-1c346c53d0d1
+	github.com/struqt/logging v0.0.1
+	github.com/struqt/txn v0.0.2
 )
 
 require (
@@ -16,9 +16,4 @@ require (
 	github.com/rs/zerolog v1.30.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
-)
-
-replace (
-	github.com/struqt/logging => ../../logging
-	github.com/struqt/txn => ../../txn
 )

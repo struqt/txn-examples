@@ -15,6 +15,7 @@ build_release() {
   local file
   file="${module:?}_demo_$(go env GOHOSTOS)_$(go env GOARCH)"
   pushd "${SELF_DIR:?}/${module:?}"
+  go mod tidy
   go get -d -v -u all
   gofmt -w -l -d -s .
   go build -ldflags "-s -w" -o "${OUT_DIR:?}/${file:?}"

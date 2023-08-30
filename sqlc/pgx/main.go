@@ -63,16 +63,16 @@ func main() {
 	wg.Wait()
 }
 
-func tick(ctx context.Context, pool *pgxpool.Pool, count int32) {
-	if result, err := txn_pgx.PgxExecute(ctx, pool, push(), PushAuthorDo); err != nil {
-		log.Error(err, "")
+func tick(ctx context.Context, pool txn_pgx.PgxBeginner, count int32) {
+	if doer, err := txn_pgx.PgxExecute(ctx, pool, push(), PushAuthorDo); err != nil {
+		log.Error(err, "tick", "count", count, "txn", doer.Title())
 	} else {
-		log.V(1).Info("", "title", result.Title(), "inserted", result.inserted)
+		log.V(1).Info("", "title", doer.Title(), "inserted", doer.inserted)
 	}
-	if result, err := txn_pgx.PgxExecute(ctx, pool, fetch(), FetchLastAuthorDo); err != nil {
-		log.Error(err, "")
+	if doer, err := txn_pgx.PgxExecute(ctx, pool, fetch(), FetchLastAuthorDo); err != nil {
+		log.Error(err, "tick", "count", count, "txn", doer.Title())
 	} else {
-		log.V(1).Info("", "title", result.Title(), "id", result.id)
+		log.V(1).Info("", "title", doer.Title(), "id", doer.id)
 	}
 	log.Info("tick", "count", count)
 }

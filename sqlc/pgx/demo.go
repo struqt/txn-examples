@@ -5,33 +5,17 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/struqt/txn/txn_pgx"
-
 	"examples/sqlc/pgx/demo"
 )
 
-type TutorialDoerBase struct {
-	txn_pgx.PgxDoerBase
-	query *demo.Queries
-}
-
-func (d *TutorialDoerBase) BeginTxn(ctx context.Context, db txn_pgx.PgxBeginner) (txn_pgx.Txn, error) {
-	if w, err := txn_pgx.PgxBeginTxn(ctx, db, d.Options()); err != nil {
-		return nil, err
-	} else {
-		d.query = demo.New(w.Raw)
-		return w, nil
-	}
-}
-
 type FetchLastAuthorDoer struct {
-	TutorialDoerBase
+	DemoDoerBase
 	id int64
 }
 
 func FetchLastAuthorDo(ctx context.Context, do *FetchLastAuthorDoer) error {
 	log := log.WithName(do.Title())
-	stat, err := do.query.StatAuthor(ctx)
+	stat, err := do.Stmt().StatAuthor(ctx)
 	if err != nil {
 		return err
 	}
@@ -40,7 +24,7 @@ func FetchLastAuthorDo(ctx context.Context, do *FetchLastAuthorDoer) error {
 		return nil
 	}
 	if id, ok := stat.MaxID.(int64); ok {
-		fetched, err := do.query.GetAuthor(ctx, id)
+		fetched, err := do.Stmt().GetAuthor(ctx, id)
 		do.id = id
 		if err != nil {
 			return err
@@ -55,7 +39,7 @@ func FetchLastAuthorDo(ctx context.Context, do *FetchLastAuthorDoer) error {
 }
 
 type PushAuthorDoer struct {
-	TutorialDoerBase
+	DemoDoerBase
 	insert   demo.CreateAuthorParams
 	inserted int64
 }
@@ -63,13 +47,13 @@ type PushAuthorDoer struct {
 func PushAuthorDo(ctx context.Context, do *PushAuthorDoer) error {
 	log := log.WithName(do.Title())
 	var err error
-	inserted, err := do.query.CreateAuthor(ctx, do.insert)
+	inserted, err := do.Stmt().CreateAuthor(ctx, do.insert)
 	if err != nil {
 		return err
 	}
 	do.inserted = inserted.ID
 	log.V(2).Info("", "inserted", inserted)
-	fetched, err := do.query.GetAuthor(ctx, inserted.ID)
+	fetched, err := do.Stmt().GetAuthor(ctx, inserted.ID)
 	if err != nil {
 		return err
 	}
@@ -79,7 +63,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthorDoer) error {
 		if count > 10 {
 			break
 		}
-		stat, err := do.query.StatAuthor(ctx)
+		stat, err := do.Stmt().StatAuthor(ctx)
 		if err != nil {
 			return err
 		}
@@ -88,7 +72,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthorDoer) error {
 			break
 		}
 		if id, ok := stat.MinID.(int64); ok {
-			if err = do.query.DeleteAuthor(ctx, id); err != nil {
+			if err = do.Stmt().DeleteAuthor(ctx, id); err != nil {
 				return err
 			}
 			count++
@@ -96,7 +80,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthorDoer) error {
 			return fmt.Errorf("the value is not of type int64")
 		}
 	}
-	authors, err := do.query.ListAuthors(ctx)
+	authors, err := do.Stmt().ListAuthors(ctx)
 	if err != nil {
 		return err
 	}

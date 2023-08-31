@@ -64,15 +64,17 @@ func main() {
 }
 
 func tick(ctx context.Context, pool txn_pgx.PgxBeginner, count int32) {
+	t0 := time.Now()
 	if doer, err := txn_pgx.PgxExecute(ctx, pool, push(), PushAuthorDo); err != nil {
 		log.Error(err, "tick", "count", count, "txn", doer.Title())
 	} else {
-		log.V(1).Info("", "title", doer.Title(), "inserted", doer.inserted)
+		log.V(1).Info("", "title", doer.Title(), "duration", time.Now().Sub(t0), "inserted", doer.inserted)
 	}
+	t1 := time.Now()
 	if doer, err := txn_pgx.PgxExecute(ctx, pool, fetch(), FetchLastAuthorDo); err != nil {
 		log.Error(err, "tick", "count", count, "txn", doer.Title())
 	} else {
-		log.V(1).Info("", "title", doer.Title(), "id", doer.id)
+		log.V(1).Info("", "title", doer.Title(), "duration", time.Now().Sub(t1), "id", doer.id)
 	}
 	log.Info("tick", "count", count)
 }

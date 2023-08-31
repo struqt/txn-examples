@@ -1,7 +1,7 @@
 # This workflow will build a golang project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
-name: Go
+name: Go Build
 
 on:
   push:
@@ -10,19 +10,56 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [
+          #ubuntu-latest,
+          ubuntu-20.04,
+          macos-13,
+          #windows-2022,
+        ]
+      fail-fast: true
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'true'
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.20'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
 
-    - name: Build
-      run: go build -v ./...
+      - name: Build Pgx Example
+        working-directory: ${{ github.workspace }}/sqlc/pgx
+        run: go build -ldflags "-s -w" -v -o ../demo_pgx_${{ runner.os }}_${{ runner.arch }}
+      - name: Test Pgx Example
+        working-directory: ${{ github.workspace }}/sqlc/pgx
+        run: go test -v ./...
+      - name: Upload Pgx Example
+        uses: actions/upload-artifact@v3
+        with:
+          retention-days: 10
+          name: demo_pgx_${{ runner.os }}_${{ runner.arch }}
+          path: ${{ github.workspace }}/sqlc/demo_pgx_${{ runner.os }}_${{ runner.arch }}
 
-    - name: Test
-      run: go test -v ./...
+      - name: Build Pg Example
+        working-directory: ${{ github.workspace }}/sqlc/pg
+        run: go build -ldflags "-s -w" -v -o ../demo_pg_${{ runner.os }}_${{ runner.arch }}
+      - name: Upload Pg Example
+        uses: actions/upload-artifact@v3
+        with:
+          retention-days: 10
+          name: demo_pg_${{ runner.os }}_${{ runner.arch }}
+          path: ${{ github.workspace }}/sqlc/demo_pg_${{ runner.os }}_${{ runner.arch }}
+
+      - name: Build MySQL Example
+        working-directory: ${{ github.workspace }}/sqlc/mysql
+        run: go build -ldflags "-s -w" -v -o ../demo_mysql_${{ runner.os }}_${{ runner.arch }}
+      - name: Upload MySQL Example
+        uses: actions/upload-artifact@v3
+        with:
+          retention-days: 10
+          name: demo_mysql_${{ runner.os }}_${{ runner.arch }}
+          path: ${{ github.workspace }}/sqlc/demo_mysql_${{ runner.os }}_${{ runner.arch }}

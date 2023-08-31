@@ -33,8 +33,8 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/struqt/logging v0.0.1 h1:ju0yvpF7Cwy04iLwBtGtKGwB1a3waNjEk2qjRaoWgGk=
 github.com/struqt/logging v0.0.1/go.mod h1:f/YPG5tdUiUux+7R8/wCzeCx1AvrdSAnh98AjXyb2XI=
-github.com/struqt/txn v0.0.2 h1:wPfxmh3OGQiD8QYbiTaV2Z5+wk76jBDu9il0voFSHfo=
-github.com/struqt/txn v0.0.2/go.mod h1:hNcfZ+rENOe/39FN0LDTyCoqFBTur5rRDH69NERRzRQ=
+github.com/struqt/txn v0.0.3 h1:SyUs3Pv8yXWWf7SX3gufdZrVbKdODbTIK6LaUFjwdNo=
+github.com/struqt/txn v0.0.3/go.mod h1:hNcfZ+rENOe/39FN0LDTyCoqFBTur5rRDH69NERRzRQ=
 github.com/struqt/txn/txn_pgx v0.0.2 h1:xg54V2M9kieG1mniKuRC2r7AMImRgKuolD+JA4AEMvQ=
 github.com/struqt/txn/txn_pgx v0.0.2/go.mod h1:cWwRAtj0ftMJBT16NjS10ZAFyMk6q+v7Pb9uNcUQTQs=
 golang.org/x/crypto v0.12.0 h1:tFM/ta59kqch6LlvYnPa0yx5a83cL2nHflFhYKvv9Yk=

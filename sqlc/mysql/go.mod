@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/struqt/logging v0.0.1
-	github.com/struqt/txn v0.0.2
+	github.com/struqt/txn v0.0.3
 )
 
 require (

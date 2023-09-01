@@ -12,41 +12,71 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/struqt/logging"
 
+	"examples/sqlc/mysql/dao"
 	"examples/sqlc/mysql/demo"
 )
 
-var log = logging.NewLogger("")
+const (
+	TickCount      = 6
+	TickIntervalMs = 500
+)
+
+var log logging.Logger
+
+func init() {
+	logging.LogConsoleThreshold = -1
+	log = logging.NewLogger("")
+	dao.Setup(log)
+}
+
+func tick(ctx context.Context, d dao.Demo, count int32) {
+	log.V(0).Info(fmt.Sprintf("tick %d", count))
+	_, _ = dao.ExecuteRw(ctx, d, do1(), dao.PushAuthorDo)
+	_, _ = dao.ExecuteRo(ctx, d, &dao.ListAuthor{}, dao.ListAuthorDo)
+	_, _ = dao.ExecuteRo(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
+}
+
+func do1() (do *dao.PushAuthor) {
+	do = &dao.PushAuthor{}
+	do.Insert = demo.CreateAuthorParams{
+		Name: "Brian Kernighan",
+		Bio: sql.NullString{
+			Valid:  true,
+			String: "Co-author of The C Programming Language",
+		}}
+	return
+}
 
 func main() {
+	log.Info("Process is starting ...")
 	defer os.Exit(0)
 	defer log.Info("Process is ending ...")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer log.Info("Context is cancelled")
 	defer cancel()
-	run(ctx)
-}
-
-func run(ctx context.Context) {
 	var (
-		dqc *DemoQueries
 		err error
-		clo []func()
+		db  *sql.DB
+		clo func()
 	)
-	if err, dqc, clo = cache(); err != nil {
+	if err, db, clo = open(); err != nil {
 		log.Error(err, "")
 		return
 	}
 	defer log.Info("Connection pool is closed")
-	defer func() {
-		for _, c := range clo {
-			c()
-		}
-	}()
+	defer clo()
+	defer log.Info("Connection cache is closed")
+	d := dao.NewDemo(db)
+	defer d.Clear()
+	run(ctx, func(i int32) { tick(ctx, d, i) })
+}
+
+func run(ctx context.Context, tick func(int32)) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
 		defer wg.Done()
-		ticker := time.NewTicker(500 * time.Millisecond)
+		ticker := time.NewTicker(TickIntervalMs * time.Millisecond)
 		defer ticker.Stop()
 		var count atomic.Int32
 		for {
@@ -56,92 +86,44 @@ func run(ctx context.Context) {
 				return
 			case <-ticker.C:
 				count.Add(1)
-				if count.Load() > 3 {
+				if count.Load() > TickCount {
 					return
 				}
-				go tick(ctx, dqc, count.Load())
+				go tick(count.Load())
 			}
 		}
 	}(&wg)
 	wg.Wait()
 }
 
-func tick(ctx context.Context, dq *DemoQueries, count int32) {
-	if do, err := DemoExecute(ctx, dq, push(), PushAuthorDo); err != nil {
-		log.Error(err, "tick", "count", count, "txn", do.Title())
-	} else {
-		log.V(1).Info("tick", "title", do.Title(), "inserted", do.inserted)
-	}
-	if do, err := DemoExecute(ctx, dq, fetch(), FetchLastAuthorDo); err != nil {
-		log.Error(err, "tick", "count", count, "txn", do.Title())
-	} else {
-		log.V(1).Info("tick", "title", do.Title(), "id", do.id)
-	}
-	log.Info("tick", "count", count)
-}
-
-func fetch() *FetchLastAuthorDoer {
-	do := &FetchLastAuthorDoer{}
-	do.SetRethrowPanic(false)
-	do.SetTitle("Txn.FetchLastAuthor")
-	do.SetTimeout(200 * time.Millisecond)
-	do.SetOptions(&sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-		ReadOnly:  true,
-	})
-	return do
-}
-
-func push() *PushAuthorDoer {
-	do := &PushAuthorDoer{
-		insert: demo.CreateAuthorParams{
-			Name: "Brian Kernighan",
-			Bio: sql.NullString{
-				Valid:  true,
-				String: "Co-author of The C Programming Language",
-			},
-		},
-	}
-	do.SetRethrowPanic(false)
-	do.SetTitle("Txn.PushAuthor")
-	do.SetTimeout(250 * time.Millisecond)
-	do.SetOptions(&sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-		ReadOnly:  false,
-	})
-	return do
-}
-
-func cache() (error, *DemoQueries, []func()) {
+func address() string {
 	var addr string
-	addr = os.Getenv("DB_SOCK_ADDR")
+	addr = os.Getenv("DB_ADDR_UDS")
 	if len(addr) > 0 {
 		addr = fmt.Sprintf("unix(%s)", addr)
 	} else {
-		addr = os.Getenv("DB_HOST")
+		addr = os.Getenv("DB_ADDR_TCP")
 		if len(addr) <= 0 {
 			addr = "127.0.0.1"
 		}
 		addr = fmt.Sprintf("tcp(%s)", addr)
 	}
-	// <username>:<pw>@tcp(<HOST>:<port>)/<dbname>
-	dsn := fmt.Sprintf("example:%s@%s/example?charset=utf8", os.Getenv("DB_PASSWORD"), addr)
+	return addr
+}
+
+func open() (error, *sql.DB, func()) {
+	dsn := fmt.Sprintf("example:%s@%s/example?charset=utf8", os.Getenv("DB_PASSWORD"), address())
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Error(err, "")
 		return err, nil, nil
 	}
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
+	db.SetMaxOpenConns(2)
+	db.SetMaxIdleConns(2)
 	db.SetConnMaxIdleTime(600 * time.Second)
-	dq := &DemoQueries{db: db}
-	return nil, dq,
-		[]func(){
-			func() { dq.Clear() },
-			func() {
-				if dq.db != nil {
-					_ = dq.db.Close()
-				}
-			},
+	return nil, db, func() {
+		if db != nil {
+			_ = db.Close()
 		}
+	}
 }

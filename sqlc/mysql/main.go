@@ -113,8 +113,19 @@ func push() *PushAuthorDoer {
 }
 
 func cache() (error, *DemoQueries, []func()) {
+	var addr string
+	addr = os.Getenv("DB_SOCK_ADDR")
+	if len(addr) > 0 {
+		addr = fmt.Sprintf("unix(%s)", addr)
+	} else {
+		addr = os.Getenv("DB_HOST")
+		if len(addr) <= 0 {
+			addr = "127.0.0.1"
+		}
+		addr = fmt.Sprintf("tcp(%s)", addr)
+	}
 	// <username>:<pw>@tcp(<HOST>:<port>)/<dbname>
-	dsn := fmt.Sprintf("example:%s@tcp(%s)/example", os.Getenv("DB_PASSWORD"), os.Getenv("DB_HOST"))
+	dsn := fmt.Sprintf("example:%s@%s/example?charset=utf8", os.Getenv("DB_PASSWORD"), addr)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Error(err, "")

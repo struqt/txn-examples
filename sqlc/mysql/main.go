@@ -67,7 +67,7 @@ func main() {
 	defer clo()
 	defer log.Info("Connection cache is closed")
 	d := dao.NewDemo(db)
-	defer d.Clear()
+	defer func() { _ = d.Close() }()
 	run(ctx, func(i int32) { tick(ctx, d, i) })
 }
 

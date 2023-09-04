@@ -3,20 +3,18 @@ package dao
 import (
 	"context"
 	"database/sql"
-	"sync"
-	"time"
 
 	"github.com/struqt/txn/txn_sql"
 
 	"examples/sqlc/mysql/demo"
 )
 
-type Demo = Dao[*demo.Queries]
+type DemoQueries = *demo.Queries
 
-type DemoDoer = txn_sql.SqlDoer[*demo.Queries]
+type DemoDoer = txn_sql.SqlDoer[DemoQueries]
 
 type DemoDoerBase struct {
-	txn_sql.SqlDoerBase[*demo.Queries]
+	txn_sql.SqlDoerBase[DemoQueries]
 }
 
 func (do *DemoDoerBase) BeginTxn(ctx context.Context, db txn_sql.SqlBeginner) (txn_sql.Txn, error) {
@@ -31,48 +29,13 @@ func (do *DemoDoerBase) BeginTxn(ctx context.Context, db txn_sql.SqlBeginner) (t
 	}
 }
 
+type Demo = Dao[DemoQueries]
+
 func NewDemo(db *sql.DB) Demo {
-	return &DemoImpl{db: db}
-}
-
-type DemoImpl struct {
-	db    txn_sql.SqlBeginner
-	mu    sync.Mutex
-	cache *demo.Queries
-}
-
-func (impl *DemoImpl) beginner() txn_sql.SqlBeginner {
-	return impl.db
-}
-
-func (impl *DemoImpl) prepare(ctx context.Context, do DemoDoer) (err error) {
-	impl.mu.Lock()
-	defer impl.mu.Unlock()
-	if impl.cache == nil {
-		t0 := time.Now()
-		log.V(2).Info("Preparing ...")
-		if do.Timeout() > time.Millisecond {
-			var cancel context.CancelFunc
-			ctx, cancel = context.WithTimeout(ctx, do.Timeout())
-			defer log.V(2).Info("Prepared, Canceled")
-			defer cancel()
-		}
-		impl.cache, err = demo.Prepare(ctx, impl.db)
-		log.V(2).Info("Prepared", "duration", time.Now().Sub(t0))
-		if err != nil {
-			log.Error(err, "failed to prepare transaction")
-			return
-		}
+	i := &daoBase[DemoQueries]{}
+	i.db = db
+	i.cacheNew = func(ctx context.Context, db txn_sql.SqlBeginner) (DemoQueries, error) {
+		return demo.Prepare(ctx, db)
 	}
-	do.SetStmt(impl.cache)
-	return
-}
-
-func (impl *DemoImpl) Clear() {
-	impl.mu.Lock()
-	defer impl.mu.Unlock()
-	if impl.cache != nil {
-		_ = impl.cache.Close()
-		impl.cache = nil
-	}
+	return i
 }

@@ -29,11 +29,12 @@ func init() {
 	dao.Setup(log)
 }
 
-func tick(ctx context.Context, d dao.Demo, count int32) {
+func tick(ctx context.Context, d dao.Demo, count int32, wg *sync.WaitGroup) {
 	log.V(0).Info(fmt.Sprintf("tick %d", count))
 	_, _ = dao.ExecuteRw(ctx, d, do1(), dao.PushAuthorDo)
 	_, _ = dao.ExecuteRo(ctx, d, &dao.ListAuthor{}, dao.ListAuthorDo)
 	_, _ = dao.ExecuteRo(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
+	defer wg.Done()
 }
 
 func do1() (do *dao.PushAuthor) {
@@ -68,14 +69,13 @@ func main() {
 	defer log.Info("Connection cache is closed")
 	d := dao.NewDemo(db)
 	defer func() { _ = d.Close() }()
-	run(ctx, func(i int32) { tick(ctx, d, i) })
+	run(ctx, func(i int32, wg *sync.WaitGroup) { tick(ctx, d, i, wg) })
 }
 
-func run(ctx context.Context, tick func(int32)) {
+func run(ctx context.Context, tick func(int32, *sync.WaitGroup)) {
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(TickCount)
 	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
 		ticker := time.NewTicker(TickIntervalMs * time.Millisecond)
 		defer ticker.Stop()
 		var count atomic.Int32
@@ -89,7 +89,7 @@ func run(ctx context.Context, tick func(int32)) {
 				if count.Load() > TickCount {
 					return
 				}
-				go tick(count.Load())
+				go tick(count.Load(), wg)
 			}
 		}
 	}(&wg)

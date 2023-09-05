@@ -1,4 +1,4 @@
-package main
+package dao
 
 import (
 	"context"
@@ -8,18 +8,34 @@ import (
 	"examples/sqlc/pg/demo"
 )
 
-type FetchLastAuthorDoer struct {
+type ListAuthor struct {
+	DemoDoerBase
+	len int
+}
+
+func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
+	log := log.WithName(do.Title())
+	authors, err := do.Stmt().ListAuthors(ctx)
+	if err != nil {
+		return err
+	}
+	do.len = len(authors)
+	log.V(2).Info(":", "len", do.len)
+	return nil
+}
+
+type LastAuthor struct {
 	DemoDoerBase
 	id int64
 }
 
-func FetchLastAuthorDo(ctx context.Context, do *FetchLastAuthorDoer) error {
+func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 	log := log.WithName(do.Title())
 	stat, err := do.Stmt().StatAuthor(ctx)
 	if err != nil {
 		return err
 	}
-	log.V(2).Info("", "stat", stat)
+	log.V(2).Info(":", "stat", stat)
 	if stat.Size <= 0 {
 		return nil
 	}
@@ -29,7 +45,7 @@ func FetchLastAuthorDo(ctx context.Context, do *FetchLastAuthorDoer) error {
 		if err != nil {
 			return err
 		}
-		log.V(2).Info("", "fetched.id", fetched.ID, "name", fetched.Name, "bio", fetched.Bio.String)
+		log.V(2).Info(":", "fetched.id", fetched.ID, "name", fetched.Name, "bio", fetched.Bio.String)
 	} else {
 		return fmt.Errorf("the value is not of type int64")
 	}
@@ -38,13 +54,13 @@ func FetchLastAuthorDo(ctx context.Context, do *FetchLastAuthorDoer) error {
 	return nil
 }
 
-type PushAuthorDoer struct {
+type PushAuthor struct {
 	DemoDoerBase
 	Insert   demo.CreateAuthorParams
 	inserted int64
 }
 
-func PushAuthorDo(ctx context.Context, do *PushAuthorDoer) error {
+func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 	log := log.WithName(do.Title())
 	var err error
 	inserted, err := do.Stmt().CreateAuthor(ctx, do.Insert)
@@ -52,12 +68,12 @@ func PushAuthorDo(ctx context.Context, do *PushAuthorDoer) error {
 		return err
 	}
 	do.inserted = inserted.ID
-	log.V(2).Info("", "inserted.id", inserted.ID, "name", inserted.Name, "bio", inserted.Bio.String)
+	log.V(2).Info(":", "inserted.id", inserted.ID, "name", inserted.Name, "bio", inserted.Bio.String)
 	fetched, err := do.Stmt().GetAuthor(ctx, inserted.ID)
 	if err != nil {
 		return err
 	}
-	log.V(2).Info("", "equals", reflect.DeepEqual(inserted, fetched))
+	log.V(2).Info(":", "equals", reflect.DeepEqual(inserted, fetched))
 	count := 1
 	for {
 		if count > 10 {
@@ -67,7 +83,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthorDoer) error {
 		if err != nil {
 			return err
 		}
-		log.V(2).Info("", "stat", stat)
+		log.V(2).Info(":", "stat", stat)
 		if stat.Size <= 5 {
 			break
 		}
@@ -80,11 +96,6 @@ func PushAuthorDo(ctx context.Context, do *PushAuthorDoer) error {
 			return fmt.Errorf("the value is not of type int64")
 		}
 	}
-	authors, err := do.Stmt().ListAuthors(ctx)
-	if err != nil {
-		return err
-	}
-	log.V(2).Info("", "list", len(authors))
 	//panic("fake panic")
 	//return fmt.Errorf("fake error")
 	return nil

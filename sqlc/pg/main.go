@@ -12,41 +12,71 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/struqt/logging"
 
+	"examples/sqlc/pg/dao"
 	"examples/sqlc/pg/demo"
 )
 
-var log = logging.NewLogger("")
+const (
+	TickCount      = 6
+	TickIntervalMs = 500
+)
+
+var log logging.Logger
+
+func init() {
+	logging.LogConsoleThreshold = -1
+	log = logging.NewLogger("")
+	dao.Setup(log)
+}
+
+func tick(ctx context.Context, d dao.Demo, count int32, wg *sync.WaitGroup) {
+	log.V(0).Info(fmt.Sprintf("tick %d", count))
+	_, _ = dao.ExecuteRw(ctx, d, do1(), dao.PushAuthorDo)
+	_, _ = dao.ExecuteRo(ctx, d, &dao.ListAuthor{}, dao.ListAuthorDo)
+	_, _ = dao.ExecuteRo(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
+	defer wg.Done()
+}
+
+func do1() (do *dao.PushAuthor) {
+	do = &dao.PushAuthor{}
+	do.Insert = demo.CreateAuthorParams{
+		Name: "Brian Kernighan",
+		Bio: sql.NullString{
+			Valid:  true,
+			String: "Co-author of The C Programming Language",
+		}}
+	return
+}
 
 func main() {
+	log.Info("Process is starting ...")
 	defer os.Exit(0)
 	defer log.Info("Process is ending ...")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer log.Info("Context is cancelled")
 	defer cancel()
-	run(ctx)
-}
-
-func run(ctx context.Context) {
 	var (
-		dqc *DemoQueries
 		err error
-		clo []func()
+		db  *sql.DB
+		clo func()
 	)
-	if err, dqc, clo = cache(); err != nil {
+	if err, db, clo = open(); err != nil {
 		log.Error(err, "")
 		return
 	}
 	defer log.Info("Connection pool is closed")
-	defer func() {
-		for _, c := range clo {
-			c()
-		}
-	}()
+	defer clo()
+	defer log.Info("Connection cache is closed")
+	d := dao.NewDemo(db)
+	defer func() { _ = d.Close() }()
+	run(ctx, func(i int32, wg *sync.WaitGroup) { tick(ctx, d, i, wg) })
+}
+
+func run(ctx context.Context, tick func(int32, *sync.WaitGroup)) {
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(TickCount)
 	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		ticker := time.NewTicker(500 * time.Millisecond)
+		ticker := time.NewTicker(TickIntervalMs * time.Millisecond)
 		defer ticker.Stop()
 		var count atomic.Int32
 		for {
@@ -56,81 +86,44 @@ func run(ctx context.Context) {
 				return
 			case <-ticker.C:
 				count.Add(1)
-				if count.Load() > 3 {
+				if count.Load() > TickCount {
 					return
 				}
-				go tick(ctx, dqc, count.Load())
+				go tick(count.Load(), wg)
 			}
 		}
 	}(&wg)
 	wg.Wait()
 }
 
-func tick(ctx context.Context, dq *DemoQueries, count int32) {
-	if do, err := DemoExecute(ctx, dq, push(), PushAuthorDo); err != nil {
-		log.Error(err, "tick", "count", count, "txn", do.Title())
-	} else {
-		log.V(1).Info("tick", "title", do.Title(), "inserted", do.inserted)
-	}
-	if do, err := DemoExecute(ctx, dq, fetch(), FetchLastAuthorDo); err != nil {
-		log.Error(err, "tick", "count", count, "txn", do.Title())
-	} else {
-		log.V(1).Info("tick", "title", do.Title(), "id", do.id)
-	}
-	log.Info("tick", "count", count)
-}
-
-func fetch() *FetchLastAuthorDoer {
-	do := &FetchLastAuthorDoer{}
-	do.SetRethrowPanic(false)
-	do.SetTitle("Txn.FetchLastAuthor")
-	do.SetTimeout(200 * time.Millisecond)
-	do.SetOptions(&sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-		ReadOnly:  true,
-	})
-	return do
-}
-
-func push() *PushAuthorDoer {
-	do := &PushAuthorDoer{
-		Insert: demo.CreateAuthorParams{
-			Name: "Brian Kernighan",
-			Bio: sql.NullString{
-				Valid:  true,
-				String: "Co-author of The C Programming Language",
-			},
-		},
-	}
-	do.SetRethrowPanic(false)
-	do.SetTitle("Txn.PushAuthor")
-	do.SetTimeout(250 * time.Millisecond)
-	do.SetOptions(&sql.TxOptions{
-		Isolation: sql.LevelReadCommitted,
-		ReadOnly:  false,
-	})
-	return do
-}
-
-func cache() (error, *DemoQueries, []func()) {
-	dsn := fmt.Sprintf("sslmode=disable dbname=example host=%s user=example password=%s",
-		os.Getenv("DB_HOST"), os.Getenv("DB_PASSWORD"))
-	db, err := sql.Open("postgres", dsn)
+func open() (error, *sql.DB, func()) {
+	db, err := sql.Open(address())
 	if err != nil {
 		log.Error(err, "")
 		return err, nil, nil
 	}
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
+	db.SetMaxOpenConns(2)
+	db.SetMaxIdleConns(2)
 	db.SetConnMaxIdleTime(600 * time.Second)
-	dq := &DemoQueries{db: db}
-	return nil, dq,
-		[]func(){
-			func() { dq.Clear() },
-			func() {
-				if dq.db != nil {
-					_ = dq.db.Close()
-				}
-			},
+	return nil, db, func() {
+		if db != nil {
+			_ = db.Close()
 		}
+	}
+}
+
+func address() (string, string) {
+	var addr string
+	addr = os.Getenv("DB_ADDR_UDS")
+	if len(addr) > 0 {
+
+	} else {
+		addr = os.Getenv("DB_ADDR_TCP")
+		if len(addr) <= 0 {
+			addr = "127.0.0.1"
+		}
+
+	}
+	passwd := os.Getenv("DB_PASSWORD")
+	return "postgres", fmt.Sprintf("sslmode=disable dbname=example user=example password=%s host=%s", passwd, addr)
 }

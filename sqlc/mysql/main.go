@@ -96,24 +96,8 @@ func run(ctx context.Context, tick func(int32, *sync.WaitGroup)) {
 	wg.Wait()
 }
 
-func address() string {
-	var addr string
-	addr = os.Getenv("DB_ADDR_UDS")
-	if len(addr) > 0 {
-		addr = fmt.Sprintf("unix(%s)", addr)
-	} else {
-		addr = os.Getenv("DB_ADDR_TCP")
-		if len(addr) <= 0 {
-			addr = "127.0.0.1"
-		}
-		addr = fmt.Sprintf("tcp(%s)", addr)
-	}
-	return addr
-}
-
 func open() (error, *sql.DB, func()) {
-	dsn := fmt.Sprintf("example:%s@%s/example?charset=utf8", os.Getenv("DB_PASSWORD"), address())
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open(address())
 	if err != nil {
 		log.Error(err, "")
 		return err, nil, nil
@@ -126,4 +110,20 @@ func open() (error, *sql.DB, func()) {
 			_ = db.Close()
 		}
 	}
+}
+
+func address() (string, string) {
+	var addr string
+	addr = os.Getenv("DB_ADDR_UDS")
+	if len(addr) > 0 {
+		addr = fmt.Sprintf("unix(%s)", addr)
+	} else {
+		addr = os.Getenv("DB_ADDR_TCP")
+		if len(addr) <= 0 {
+			addr = "127.0.0.1"
+		}
+		addr = fmt.Sprintf("tcp(%s)", addr)
+	}
+	passwd := os.Getenv("DB_PASSWORD")
+	return "mysql", fmt.Sprintf("example:%s@%s/example?charset=utf8", passwd, addr)
 }

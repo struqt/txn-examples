@@ -24,18 +24,38 @@ func Setup(logger logging.Logger) {
 	})
 }
 
-type Statements interface {
+type Txn = txn.Txn
+
+type TxnSql = *txn_sql.SqlTxn
+
+type TxnBeginner = txn_sql.SqlBeginner
+
+type TxnOptions = txn_sql.SqlOptions
+
+type TxnStmt interface {
 	comparable
 	io.Closer
 }
 
-type Dao[Stmt Statements] interface {
+type TxnDoer[Stmt TxnStmt] interface {
+	txn_sql.SqlDoer[Stmt]
+}
+
+type TxnDoerBase[Stmt TxnStmt] struct {
+	txn_sql.SqlDoerBase[Stmt]
+}
+
+func TxnBegin(ctx context.Context, db TxnBeginner, options TxnOptions) (TxnSql, error) {
+	return txn_sql.SqlBeginTxn(ctx, db, options)
+}
+
+type Dao[Stmt TxnStmt] interface {
 	io.Closer
 	prepare(ctx context.Context, do txn_sql.SqlDoer[Stmt]) error
 	beginner() txn_sql.SqlBeginner
 }
 
-type daoBase[Stmt Statements] struct {
+type daoBase[Stmt TxnStmt] struct {
 	mu       sync.Mutex
 	db       txn_sql.SqlBeginner
 	cache    Stmt
@@ -77,35 +97,22 @@ func (impl *daoBase[any]) prepare(ctx context.Context, do txn_sql.SqlDoer[any]) 
 	return
 }
 
-func ExecuteRo[Stmt Statements, Doer txn_sql.SqlDoer[Stmt]](
-	ctx context.Context, dao Dao[Stmt],
-	do Doer, fn txn.DoFunc[txn.Txn, txn_sql.SqlBeginner, Doer],
+func Execute[Stmt TxnStmt, Doer TxnDoer[Stmt]](
+	ctx context.Context, dao Dao[Stmt], do Doer, fn txn.DoFunc[TxnOptions, TxnBeginner, Doer],
 ) (Doer, error) {
-	t := reflect.TypeOf(do)
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	title := t.Name()
-	do.ReadOnly(title)
-	return Execute(ctx, dao, do, fn)
+	do.SetReadWrite(title(dao, do))
+	return exec(ctx, dao, do, fn)
 }
 
-func ExecuteRw[Stmt Statements, Doer txn_sql.SqlDoer[Stmt]](
-	ctx context.Context, dao Dao[Stmt],
-	do Doer, fn txn.DoFunc[txn.Txn, txn_sql.SqlBeginner, Doer],
+func ExecuteRo[Stmt TxnStmt, Doer TxnDoer[Stmt]](
+	ctx context.Context, dao Dao[Stmt], do Doer, fn txn.DoFunc[TxnOptions, TxnBeginner, Doer],
 ) (Doer, error) {
-	t := reflect.TypeOf(do)
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	title := t.Name()
-	do.ReadWrite(title)
-	return Execute(ctx, dao, do, fn)
+	do.SetReadOnly(title(dao, do))
+	return exec(ctx, dao, do, fn)
 }
 
-func Execute[Stmt Statements, Doer txn_sql.SqlDoer[Stmt]](
-	ctx context.Context, dao Dao[Stmt],
-	doer Doer, fn txn.DoFunc[txn.Txn, txn_sql.SqlBeginner, Doer],
+func exec[Stmt TxnStmt, Doer TxnDoer[Stmt]](
+	ctx context.Context, dao Dao[Stmt], doer Doer, fn txn.DoFunc[TxnOptions, TxnBeginner, Doer],
 ) (Doer, error) {
 	log := log.WithName(doer.Title())
 	retryIntervals := [4]time.Duration{
@@ -117,7 +124,7 @@ func Execute[Stmt Statements, Doer txn_sql.SqlDoer[Stmt]](
 	const retryIntervalsLen = len(retryIntervals)
 	t0 := time.Now()
 	cnt := 0
-	log.V(2).Info("~", "state", "Preparing")
+	log.V(2).Info(" ~", "state", "Preparing")
 	for {
 		var err error
 		if err = dao.prepare(ctx, doer); err == nil {
@@ -134,8 +141,8 @@ func Execute[Stmt Statements, Doer txn_sql.SqlDoer[Stmt]](
 		time.Sleep(i)
 	}
 	t1 := time.Now()
-	log.V(2).Info("~", "state", "Prepared", "duration", t1.Sub(t0))
-	log.V(1).Info("+")
+	log.V(2).Info(" ~", "state", "Prepared", "duration", t1.Sub(t0))
+	log.V(1).Info(" +")
 	if doer, err := txn_sql.SqlExecute(ctx, dao.beginner(), doer, fn); err != nil {
 		log.Error(err, "")
 		if x := dao.Close(); x != nil {
@@ -145,7 +152,18 @@ func Execute[Stmt Statements, Doer txn_sql.SqlDoer[Stmt]](
 			return doer, fmt.Errorf("%w [SqlExecute]", err)
 		}
 	} else {
-		log.V(1).Info("+", "duration", time.Now().Sub(t1))
+		log.V(1).Info(" +", "duration", time.Now().Sub(t1))
 		return doer, nil
 	}
+}
+
+func title[Stmt TxnStmt, Doer txn_sql.SqlDoer[Stmt]](_ Dao[Stmt], do Doer) string {
+	if do.Title() != "" {
+		return ""
+	}
+	t := reflect.TypeOf(do)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t.Name()
 }

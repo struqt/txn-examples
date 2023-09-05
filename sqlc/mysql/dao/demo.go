@@ -8,8 +8,40 @@ import (
 	"examples/sqlc/mysql/demo"
 )
 
+type DemoQueries = *demo.Queries
+
+type DemoDoer[R any] struct {
+	TxnDoerBase[DemoQueries]
+	Result R
+}
+
+func (do *DemoDoer[R]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error) {
+	if w, err := TxnBegin(ctx, db, do.Options()); err != nil {
+		return nil, err
+	} else {
+		if do.Stmt() == nil {
+			do.SetStmt(demo.New(db))
+		}
+		do.SetStmt(do.Stmt().WithTx(w.Raw))
+		return w, nil
+	}
+}
+
+type Demo = Dao[DemoQueries]
+
+func NewDemo(db TxnBeginner) Demo {
+	i := &daoBase[DemoQueries]{}
+	i.db = db
+	i.cacheNew = func(ctx context.Context, db TxnBeginner) (DemoQueries, error) {
+		return demo.Prepare(ctx, db)
+	}
+	return i
+}
+
+///////////////////////////////////////////////////////////////////////
+
 type ListAuthor struct {
-	DemoDoerBase
+	DemoDoer[DemoQueries]
 	len int
 }
 
@@ -20,12 +52,12 @@ func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
 		return err
 	}
 	do.len = len(authors)
-	log.V(2).Info("|", "len", do.len)
+	log.V(2).Info(" |", "len", do.len)
 	return nil
 }
 
 type LastAuthor struct {
-	DemoDoerBase
+	DemoDoer[DemoQueries]
 	id int64
 }
 
@@ -35,7 +67,7 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 	if err != nil {
 		return err
 	}
-	log.V(2).Info("|", "stat", stat)
+	log.V(2).Info(" |", "stat", stat)
 	if stat.Size <= 0 {
 		return nil
 	}
@@ -45,7 +77,7 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 		if err != nil {
 			return err
 		}
-		log.V(2).Info("|", "fetched.id", fetched.ID, "name", fetched.Name, "bio", fetched.Bio.String)
+		log.V(2).Info(" |", "fetched.id", fetched.ID, "name", fetched.Name, "bio", fetched.Bio.String)
 	} else {
 		return fmt.Errorf("the value is not of type int64")
 	}
@@ -55,7 +87,7 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 }
 
 type PushAuthor struct {
-	DemoDoerBase
+	DemoDoer[DemoQueries]
 	Insert   demo.CreateAuthorParams
 	inserted int64
 }

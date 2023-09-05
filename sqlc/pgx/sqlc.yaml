@@ -5,7 +5,7 @@ sql:
       go:
         sql_package: "pgx/v5"
         emit_prepared_queries: true
-        out: "demo"
+        out: "dao/demo"
         package: "demo"
     schema: "../pg/demo.sql"
     queries: "../pg/demo.sql"

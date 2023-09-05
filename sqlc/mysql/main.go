@@ -31,7 +31,7 @@ func init() {
 
 func tick(ctx context.Context, d dao.Demo, count int32, wg *sync.WaitGroup) {
 	log.V(0).Info(fmt.Sprintf("tick %d", count))
-	_, _ = dao.ExecuteRw(ctx, d, do1(), dao.PushAuthorDo)
+	_, _ = dao.Execute(ctx, d, do1(), dao.PushAuthorDo)
 	_, _ = dao.ExecuteRo(ctx, d, &dao.ListAuthor{}, dao.ListAuthorDo)
 	_, _ = dao.ExecuteRo(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
 	defer wg.Done()

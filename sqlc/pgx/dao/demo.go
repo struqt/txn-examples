@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"examples/sqlc/pg/demo"
+	"examples/sqlc/pgx/dao/demo"
 )
 
 type DemoQueries = *demo.Queries
@@ -19,10 +19,7 @@ func (do *DemoDoer[R]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error
 	if w, err := TxnBegin(ctx, db, do.Options()); err != nil {
 		return nil, err
 	} else {
-		if do.Stmt() == nil {
-			do.SetStmt(demo.New(db))
-		}
-		do.SetStmt(do.Stmt().WithTx(w.Raw))
+		do.SetStmt(demo.New(w.Raw))
 		return w, nil
 	}
 }
@@ -32,33 +29,25 @@ type Demo = Dao[DemoQueries]
 func NewDemo(db TxnBeginner) Demo {
 	i := &daoBase[DemoQueries]{}
 	i.db = db
-	i.cacheNew = func(ctx context.Context, db TxnBeginner) (DemoQueries, error) {
-		return demo.Prepare(ctx, db)
-	}
 	return i
 }
 
 ///////////////////////////////////////////////////////////////////////
 
-type ListAuthor struct {
-	DemoDoer[DemoQueries]
-	len int
-}
-
-func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
+func ListAuthorDo(ctx context.Context, do *DemoDoer[[]demo.Author]) error {
 	log := log.WithName(do.Title())
 	authors, err := do.Stmt().ListAuthors(ctx)
 	if err != nil {
 		return err
 	}
-	do.len = len(authors)
-	log.V(2).Info(" :", "len", do.len)
+	do.Result = authors
+	log.V(2).Info(" :", "len", len(authors))
 	return nil
 }
 
 type LastAuthor struct {
-	DemoDoer[DemoQueries]
-	id int64
+	DemoDoer[demo.Author]
+	Id int64
 }
 
 func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
@@ -73,11 +62,12 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 	}
 	if id, ok := stat.MaxID.(int64); ok {
 		fetched, err := do.Stmt().GetAuthor(ctx, id)
-		do.id = id
+		do.Id = id
+		do.Result = fetched
 		if err != nil {
 			return err
 		}
-		log.V(2).Info(" :", "fetched.id", fetched.ID, "name", fetched.Name, "bio", fetched.Bio.String)
+		log.V(2).Info(" :", "fetched", fetched)
 	} else {
 		return fmt.Errorf("the value is not of type int64")
 	}
@@ -87,9 +77,8 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 }
 
 type PushAuthor struct {
-	DemoDoer[DemoQueries]
-	Insert   demo.CreateAuthorParams
-	inserted int64
+	DemoDoer[int64]
+	Insert demo.CreateAuthorParams
 }
 
 func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
@@ -99,13 +88,13 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 	if err != nil {
 		return err
 	}
-	do.inserted = inserted.ID
-	log.V(2).Info(":", "inserted.id", inserted.ID, "name", inserted.Name, "bio", inserted.Bio.String)
+	do.Result = inserted.ID
+	log.V(2).Info(" :", "inserted", inserted)
 	fetched, err := do.Stmt().GetAuthor(ctx, inserted.ID)
 	if err != nil {
 		return err
 	}
-	log.V(2).Info(":", "equals", reflect.DeepEqual(inserted, fetched))
+	log.V(2).Info(" :", "equals", reflect.DeepEqual(inserted, fetched))
 	count := 1
 	for {
 		if count > 10 {
@@ -116,7 +105,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 			return err
 		}
 		log.V(2).Info(":", "stat", stat)
-		if stat.Size <= 5 {
+		if stat.Size <= 10 {
 			break
 		}
 		if id, ok := stat.MinID.(int64); ok {

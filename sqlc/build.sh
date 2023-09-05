@@ -17,6 +17,7 @@ build_release() {
   pushd "${SELF_DIR:?}/${module:?}"
   go mod tidy
   go get -d -v -u all
+  go mod tidy
   gofmt -w -l -d -s .
   go build -ldflags "-s -w" -o "${OUT_DIR:?}/${file:?}"
   echo " Built: ${OUT_DIR:?}/${file:?}"

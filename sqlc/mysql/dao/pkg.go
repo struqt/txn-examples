@@ -107,51 +107,6 @@ func ExecuteRo[Stmt TxnStmt, Doer TxnDoer[Stmt]](
 	return exec(ctx, dao, do, fn)
 }
 
-func exec[Stmt TxnStmt, Doer TxnDoer[Stmt]](
-	ctx context.Context, dao Dao[Stmt], doer Doer, fn txn.DoFunc[TxnOptions, TxnBeginner, Doer]) (Doer, error) {
-	log := log.WithName(doer.Title())
-	retryIntervals := [4]time.Duration{
-		time.Second * 1,
-		time.Second * 4,
-		time.Second * 9,
-		time.Second * 16,
-	}
-	const retryIntervalsLen = len(retryIntervals)
-	t0 := time.Now()
-	cnt := 0
-	log.V(2).Info(" ~", "state", "Preparing")
-	for {
-		var err error
-		if err = dao.prepare(ctx, doer); err == nil {
-			break
-		}
-		if doer.IsReadOnly() && cnt > retryIntervalsLen {
-			log.Error(err, "")
-			return doer, err
-		}
-		i := retryIntervals[cnt%retryIntervalsLen]
-		cnt++
-		log.Info("", "e", err)
-		log.Info("Retrying", "count", cnt, "interval", i)
-		time.Sleep(i)
-	}
-	t1 := time.Now()
-	log.V(2).Info(" ~", "state", "Prepared", "duration", t1.Sub(t0))
-	log.V(1).Info(" +")
-	if doer, err := txn_sql.SqlExecute(ctx, dao.beginner(), doer, fn); err != nil {
-		log.Error(err, "")
-		if x := dao.Close(); x != nil {
-			log.Error(x, "")
-			return doer, fmt.Errorf("%w [SqlExecute] %w [Close]", err, x)
-		} else {
-			return doer, fmt.Errorf("%w [SqlExecute]", err)
-		}
-	} else {
-		log.V(1).Info(" +", "duration", time.Now().Sub(t1))
-		return doer, nil
-	}
-}
-
 func title[Stmt TxnStmt, Doer TxnDoer[Stmt]](_ Dao[Stmt], do Doer) string {
 	if do.Title() != "" {
 		return ""
@@ -161,4 +116,56 @@ func title[Stmt TxnStmt, Doer TxnDoer[Stmt]](_ Dao[Stmt], do Doer) string {
 		t = t.Elem()
 	}
 	return t.Name()
+}
+
+func exec[Stmt TxnStmt, Doer TxnDoer[Stmt]](
+	ctx context.Context, dao Dao[Stmt], doer Doer, fn txn.DoFunc[TxnOptions, TxnBeginner, Doer]) (Doer, error) {
+	log := log.WithName(doer.Title())
+	log.V(2).Info(" ~", "state", "Preparing")
+	var x, err error
+	var pings = 0
+	var retries = -1
+	t0 := time.Now()
+retry:
+	retries++
+	if retries > doer.MaxRetry() && doer.MaxRetry() > 0 {
+		if err != nil {
+			log.Error(err, "", "retries", retries, "pings", pings)
+		}
+		return doer, err
+	}
+	err = dao.prepare(ctx, doer)
+	if err != nil {
+		pings, x = txn_sql.SqlPing[Stmt](ctx, dao.beginner(), doer, func(i time.Duration, cnt int) {
+			log.Info("Ping", "retries", retries, "pings", cnt, "interval", i)
+		})
+		if x == nil && pings <= 1 {
+			log.Error(err, "", "retries", retries, "pings", pings)
+			return doer, err
+		}
+		log.Info("", "retries", retries, "pings", pings, "err", err)
+		goto retry
+	}
+	t1 := time.Now()
+	log.V(2).Info(" ~", "state", "Prepared", "duration", t1.Sub(t0))
+	log.V(1).Info(" +")
+	if _, err = txn_sql.SqlExecute(ctx, dao.beginner(), doer, fn); err == nil {
+		log.V(1).Info(" +", "duration", time.Now().Sub(t1))
+		return doer, nil
+	}
+	if x := dao.Close(); x != nil {
+		log.Error(x, "")
+		err = fmt.Errorf("%w [exec] %w [Close]", err, x)
+	} else {
+		err = fmt.Errorf("%w [exec]", err)
+	}
+	pings, x = txn_sql.SqlPing[Stmt](ctx, dao.beginner(), doer, func(i time.Duration, cnt int) {
+		log.Info("Ping", "retries", retries, "pings", cnt, "interval", i)
+	})
+	if x == nil && pings <= 1 {
+		log.Error(err, "", "retries", retries, "pings", pings)
+		return doer, err
+	}
+	log.Info("", "retries", retries, "pings", pings, "err", err)
+	goto retry
 }

@@ -2,7 +2,6 @@ package dao
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -31,13 +30,13 @@ type TxnBeginner = txn_pgx.PgxBeginner
 
 type TxnOptions = txn_pgx.PgxOptions
 
-type Statements = any
+type TxnStmt = any
 
-type TxnDoer[Stmt Statements] interface {
+type TxnDoer[Stmt TxnStmt] interface {
 	txn_pgx.PgxDoer[Stmt]
 }
 
-type TxnDoerBase[Stmt Statements] struct {
+type TxnDoerBase[Stmt TxnStmt] struct {
 	txn_pgx.PgxDoerBase[Stmt]
 }
 
@@ -45,45 +44,31 @@ func TxnBegin(ctx context.Context, db TxnBeginner, options TxnOptions) (TxnPgx, 
 	return txn_pgx.PgxBeginTxn(ctx, db, options)
 }
 
-type Dao[Stmt Statements] interface {
+type Dao[Stmt TxnStmt] interface {
 	beginner() TxnBeginner
 }
 
-type daoBase[Stmt Statements] struct {
+type daoBase[Stmt TxnStmt] struct {
 	db TxnBeginner
 }
 
-func (impl *daoBase[any]) beginner() TxnBeginner {
-	return impl.db
+func (d *daoBase[_]) beginner() TxnBeginner {
+	return d.db
 }
 
-func Execute[Stmt Statements, Doer TxnDoer[Stmt]](
+func Execute[Stmt TxnStmt, Doer TxnDoer[Stmt]](
 	ctx context.Context, dao Dao[Stmt], doer Doer, fn txn.DoFunc[TxnOptions, TxnBeginner, Doer]) (Doer, error) {
 	doer.SetReadWrite(title(dao, doer))
 	return exec(ctx, dao, doer, fn)
 }
 
-func ExecuteRo[Stmt Statements, Doer TxnDoer[Stmt]](
+func ExecuteRo[Stmt TxnStmt, Doer TxnDoer[Stmt]](
 	ctx context.Context, dao Dao[Stmt], doer Doer, fn txn.DoFunc[TxnOptions, TxnBeginner, Doer]) (Doer, error) {
 	doer.SetReadOnly(title(dao, doer))
 	return exec(ctx, dao, doer, fn)
 }
 
-func exec[Stmt Statements, Doer TxnDoer[Stmt]](
-	ctx context.Context, dao Dao[Stmt], doer Doer, fn txn.DoFunc[TxnOptions, TxnBeginner, Doer]) (Doer, error) {
-	log := log.WithName(doer.Title())
-	t1 := time.Now()
-	log.V(1).Info("  +")
-	if doer, err := txn_pgx.PgxExecute(ctx, dao.beginner(), doer, fn); err != nil {
-		log.Error(err, "")
-		return doer, fmt.Errorf("%w [PgxExecute]", err)
-	} else {
-		log.V(1).Info("  +", "duration", time.Now().Sub(t1))
-		return doer, nil
-	}
-}
-
-func title[Stmt Statements, Doer TxnDoer[Stmt]](_ Dao[Stmt], do Doer) string {
+func title[Stmt TxnStmt, Doer TxnDoer[Stmt]](_ Dao[Stmt], do Doer) string {
 	if do.Title() != "" {
 		return ""
 	}
@@ -92,4 +77,36 @@ func title[Stmt Statements, Doer TxnDoer[Stmt]](_ Dao[Stmt], do Doer) string {
 		t = t.Elem()
 	}
 	return t.Name()
+}
+
+func exec[Stmt TxnStmt, Doer TxnDoer[Stmt]](
+	ctx context.Context, dao Dao[Stmt], doer Doer, fn txn.DoFunc[TxnOptions, TxnBeginner, Doer]) (Doer, error) {
+	log := log.WithName(doer.Title())
+	log.V(1).Info("  +")
+	var x, err error
+	var pings int
+	var retries = -1
+	t1 := time.Now()
+retry:
+	retries++
+	if retries > doer.MaxRetry() && doer.MaxRetry() > 0 {
+		if err != nil {
+			log.Error(err, "", "retries", retries, "pings", pings)
+		}
+		return doer, err
+	}
+	if doer, err = txn_pgx.PgxExecute(ctx, dao.beginner(), doer, fn); err == nil {
+		log.V(1).Info("  +", "duration", time.Now().Sub(t1))
+		return doer, nil
+	}
+
+	pings, x = txn_pgx.PgxPing[Stmt](ctx, dao.beginner(), doer, func(i time.Duration, cnt int) {
+		log.Info("PgxPing", "retries", retries, "pings", cnt, "interval", i)
+	})
+	if x == nil && pings <= 1 {
+		log.Error(err, "", "retries", retries, "pings", pings)
+		return doer, err
+	}
+	log.Info("", "retries", retries, "pings", pings, "err", err)
+	goto retry
 }

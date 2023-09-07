@@ -68,11 +68,14 @@ func main() {
 	defer log.Info("Connection pool is closed")
 	defer clo()
 	defer log.Info("Connection cache is closed")
+	var cnt int
 	for {
-		if _, err = dao.TxnPing(ctx, db, func(cnt int, interval time.Duration) {
-			log.Info("Ping", "count", cnt, "interval", interval, "target", addr)
+		if cnt, err = dao.TxnPing(db, func(cnt int, delay time.Duration) {
+			log.Info("Ping", "count", cnt, "delay~", delay, "target", addr)
 		}); err == nil {
 			break
+		} else {
+			log.V(1).Info("Ping", "count", cnt, "err", err)
 		}
 	}
 	d := dao.NewDemo(db)

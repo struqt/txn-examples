@@ -23,8 +23,8 @@ type TxnModuleBase[Stmt TxnStmt] struct {
 	t.ModuleBase[Stmt]
 }
 
-func TxnPing(ctx context.Context, beginner TxnBeginner, count txn.PingCount) (int, error) {
-	return t.Ping(ctx, beginner, 4, count)
+func TxnPing(beginner TxnBeginner, count txn.PingCount) (int, error) {
+	return t.Ping(beginner, 3, count)
 }
 
 func TxnBegin(ctx context.Context, db TxnBeginner, options TxnOptions) (TxnImpl, error) {

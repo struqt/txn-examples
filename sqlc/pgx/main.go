@@ -82,11 +82,14 @@ func main() {
 		pool.Close()
 		log.Info("Pgx Pool is closed.")
 	}()
+	var cnt int
 	for {
-		if _, err = dao.TxnPing(ctx, pool, func(cnt int, interval time.Duration) {
-			log.Info("Ping", "count", cnt, "interval", interval, "target", addr)
+		if cnt, err = dao.TxnPing(pool, func(cnt int, delay time.Duration) {
+			log.Info("Ping", "count", cnt, "delay~", delay, "target", addr)
 		}); err == nil {
 			break
+		} else {
+			log.V(1).Info("Ping", "count", cnt, "err", err)
 		}
 	}
 	d := dao.NewDemo(pool)

@@ -31,9 +31,9 @@ func init() {
 
 func tick(ctx context.Context, d dao.Demo, count int32, wg *sync.WaitGroup) {
 	log.V(0).Info(fmt.Sprintf("tick %d", count))
-	_, _ = dao.Execute(ctx, d, do1(), dao.PushAuthorDo)
-	_, _ = dao.ExecuteRo(ctx, d, &dao.ListAuthor{}, dao.ListAuthorDo)
-	_, _ = dao.ExecuteRo(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
+	_, _ = dao.TxnRwExecute(ctx, d, do1(), dao.PushAuthorDo)
+	_, _ = dao.TxnRoExecute(ctx, d, &dao.ListAuthor{}, dao.ListAuthorDo)
+	_, _ = dao.TxnRoExecute(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
 	defer wg.Done()
 }
 
@@ -67,6 +67,13 @@ func main() {
 	defer log.Info("Connection pool is closed")
 	defer clo()
 	defer log.Info("Connection cache is closed")
+	for {
+		if _, err = dao.TxnPing(ctx, db, func(cnt int, interval time.Duration) {
+			log.Info("Ping", "count", cnt, "interval", interval)
+		}); err == nil {
+			break
+		}
+	}
 	d := dao.NewDemo(db)
 	defer func() { _ = d.Close() }()
 	run(ctx, func(i int32, wg *sync.WaitGroup) { tick(ctx, d, i, wg) })

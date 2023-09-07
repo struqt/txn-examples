@@ -10,9 +10,8 @@ import (
 
 type DemoQueries = *demo.Queries
 
-type DemoDoer[R any] struct {
-	TxnDoerBase[DemoQueries]
-	Result R
+type DemoDoer[Result any] struct {
+	TxnDoerBase[DemoQueries, Result]
 }
 
 func (do *DemoDoer[R]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error) {
@@ -24,15 +23,13 @@ func (do *DemoDoer[R]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error
 	}
 }
 
-type Demo = Dao[DemoQueries]
+type Demo = TxnModule[DemoQueries]
 
 func NewDemo(db TxnBeginner) Demo {
-	i := &daoBase[DemoQueries]{}
-	i.db = db
+	i := &TxnModuleBase[DemoQueries]{}
+	i.Init(db)
 	return i
 }
-
-///////////////////////////////////////////////////////////////////////
 
 func ListAuthorDo(ctx context.Context, do *DemoDoer[[]demo.Author]) error {
 	log := log.WithName(do.Title())

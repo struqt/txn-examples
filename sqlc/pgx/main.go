@@ -34,18 +34,18 @@ func tick(ctx context.Context, d dao.Demo, count int32, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.V(0).Info(fmt.Sprintf("tick %d", count))
 	stat(ctx, d)
-	_, _ = dao.Execute(ctx, d, push(), dao.PushAuthorDo)
-	_, _ = dao.ExecuteRo(ctx, d, &dao.DemoDoer[[]demo.Author]{}, dao.ListAuthorDo)
-	_, _ = dao.ExecuteRo(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
+	_, _ = dao.TxnRwExecute(ctx, d, push(), dao.PushAuthorDo)
+	_, _ = dao.TxnRoExecute(ctx, d, &dao.DemoDoer[[]demo.Author]{}, dao.ListAuthorDo)
+	_, _ = dao.TxnRoExecute(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
 }
 
-func stat(ctx context.Context, d dao.Demo) *demo.StatAuthorRow {
-	type doer = dao.DemoDoer[demo.StatAuthorRow]
-	x, _ := dao.ExecuteRo(ctx, d, &doer{}, func(ctx context.Context, do *doer) error {
-		if stat, err := do.Stmt().StatAuthor(ctx); err != nil {
+func stat(ctx context.Context, mod dao.Demo) *demo.StatAuthorRow {
+	type _doer = dao.DemoDoer[demo.StatAuthorRow]
+	x, _ := dao.TxnRoExecute(ctx, mod, &_doer{}, func(ctx context.Context, do *_doer) error {
+		if result, err := do.Stmt().StatAuthor(ctx); err != nil {
 			return err
 		} else {
-			do.Result = stat
+			do.Result = result
 			log.WithName(do.Title()).V(2).Info("     :", "result", do.Result)
 			return nil
 		}
@@ -85,6 +85,13 @@ func main() {
 		pool.Close()
 		log.Info("Pgx Pool is closed.")
 	}()
+	for {
+		if _, err = dao.TxnPing(ctx, pool, func(cnt int, interval time.Duration) {
+			log.Info("Ping", "count", cnt, "interval", interval)
+		}); err == nil {
+			break
+		}
+	}
 	d := dao.NewDemo(pool)
 	var count atomic.Int32
 	var wg sync.WaitGroup

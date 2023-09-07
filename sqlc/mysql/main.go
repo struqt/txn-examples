@@ -31,13 +31,13 @@ func init() {
 
 func tick(ctx context.Context, d dao.Demo, count int32, wg *sync.WaitGroup) {
 	log.V(0).Info(fmt.Sprintf("tick %d", count))
-	_, _ = dao.Execute(ctx, d, do1(), dao.PushAuthorDo)
-	_, _ = dao.ExecuteRo(ctx, d, &dao.ListAuthor{}, dao.ListAuthorDo)
-	_, _ = dao.ExecuteRo(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
+	_, _ = dao.TxnRwExecute(ctx, d, push(), dao.PushAuthorDo)
+	_, _ = dao.TxnRoExecute(ctx, d, &dao.ListAuthor{}, dao.ListAuthorDo)
+	_, _ = dao.TxnRoExecute(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
 	defer wg.Done()
 }
 
-func do1() (do *dao.PushAuthor) {
+func push() (do *dao.PushAuthor) {
 	do = &dao.PushAuthor{}
 	do.Insert = demo.CreateAuthorParams{
 		Name: "Brian Kernighan",
@@ -67,9 +67,16 @@ func main() {
 	defer log.Info("Connection pool is closed")
 	defer clo()
 	defer log.Info("Connection cache is closed")
-	d := dao.NewDemo(db)
-	defer func() { _ = d.Close() }()
-	run(ctx, func(i int32, wg *sync.WaitGroup) { tick(ctx, d, i, wg) })
+	for {
+		if _, err = dao.TxnPing(ctx, db, func(cnt int, interval time.Duration) {
+			log.Info("Ping", "count", cnt, "interval", interval)
+		}); err == nil {
+			break
+		}
+	}
+	m := dao.NewDemo(db)
+	defer func() { _ = m.Close() }()
+	run(ctx, func(i int32, wg *sync.WaitGroup) { tick(ctx, m, i, wg) })
 }
 
 func run(ctx context.Context, tick func(int32, *sync.WaitGroup)) {
@@ -102,9 +109,9 @@ func open() (error, *sql.DB, func()) {
 		log.Error(err, "")
 		return err, nil, nil
 	}
-	db.SetMaxOpenConns(2)
+	db.SetMaxOpenConns(1)
 	db.SetMaxIdleConns(2)
-	db.SetConnMaxIdleTime(600 * time.Second)
+	db.SetConnMaxIdleTime(300 * time.Second)
 	return nil, db, func() {
 		if db != nil {
 			_ = db.Close()

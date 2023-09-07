@@ -8,14 +8,14 @@ import (
 	"examples/sqlc/mysql/demo"
 )
 
-type DemoQueries = *demo.Queries
+type DemoStmt = *demo.Queries
 
 type DemoDoer[R any] struct {
-	TxnDoerBase[DemoQueries]
+	TxnDoerBase[DemoStmt]
 	Result R
 }
 
-func (do *DemoDoer[R]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error) {
+func (do *DemoDoer[_]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error) {
 	if w, err := TxnBegin(ctx, db, do.Options()); err != nil {
 		return nil, err
 	} else {
@@ -27,21 +27,18 @@ func (do *DemoDoer[R]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error
 	}
 }
 
-type Demo = Dao[DemoQueries]
+type Demo = TxnModule[DemoStmt]
 
 func NewDemo(db TxnBeginner) Demo {
-	i := &daoBase[DemoQueries]{}
-	i.db = db
-	i.cacheNew = func(ctx context.Context, db TxnBeginner) (DemoQueries, error) {
+	i := &TxnModuleBase[DemoStmt]{}
+	i.Init(db, func(ctx context.Context, db TxnBeginner) (DemoStmt, error) {
 		return demo.Prepare(ctx, db)
-	}
+	})
 	return i
 }
 
-///////////////////////////////////////////////////////////////////////
-
 type ListAuthor struct {
-	DemoDoer[DemoQueries]
+	DemoDoer[any]
 	len int
 }
 
@@ -57,7 +54,7 @@ func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
 }
 
 type LastAuthor struct {
-	DemoDoer[DemoQueries]
+	DemoDoer[any]
 	id int64
 }
 
@@ -87,7 +84,7 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 }
 
 type PushAuthor struct {
-	DemoDoer[DemoQueries]
+	DemoDoer[any]
 	Insert   demo.CreateAuthorParams
 	inserted int64
 }

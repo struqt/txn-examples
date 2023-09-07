@@ -72,11 +72,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer log.Info("Context is cancelled")
 	defer cancel()
-	ds := fmt.Sprintf("postgres://example:%s@%s:5432/example",
-		url.QueryEscape(os.Getenv("DB_PASSWORD")),
-		os.Getenv("DB_HOST"),
-	)
-	pool, err := open(ctx, ds)
+	addr, uri := address()
+	pool, err := open(ctx, uri)
 	if err != nil {
 		log.Error(err, "Failed to set up connection pool")
 		return
@@ -87,7 +84,7 @@ func main() {
 	}()
 	for {
 		if _, err = dao.TxnPing(ctx, pool, func(cnt int, interval time.Duration) {
-			log.Info("Ping", "count", cnt, "interval", interval)
+			log.Info("Ping", "count", cnt, "interval", interval, "target", addr)
 		}); err == nil {
 			break
 		}
@@ -124,4 +121,24 @@ func open(ctx context.Context, uri string) (*pgxpool.Pool, error) {
 	config.MinConns = 1
 	config.MaxConns = 8
 	return pgxpool.NewWithConfig(ctx, config)
+}
+
+func host() (addr string) {
+	addr = os.Getenv("DB_ADDR_UDS")
+	if len(addr) > 0 {
+		addr = fmt.Sprintf("%s", addr)
+	} else {
+		addr = os.Getenv("DB_ADDR_TCP")
+		if len(addr) <= 0 {
+			addr = "127.0.0.1"
+		}
+		addr = fmt.Sprintf("%s:5432", addr)
+	}
+	return
+}
+
+func address() (string, string) {
+	h := host()
+	passwd := os.Getenv("DB_PASSWORD")
+	return h, fmt.Sprintf("postgres://example:%s@%s/example", url.QueryEscape(passwd), h)
 }

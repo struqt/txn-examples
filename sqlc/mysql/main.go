@@ -60,7 +60,8 @@ func main() {
 		db  *sql.DB
 		clo func()
 	)
-	if err, db, clo = open(); err != nil {
+	driver, uri, target := address()
+	if err, db, clo = open(driver, uri); err != nil {
 		log.Error(err, "")
 		return
 	}
@@ -69,7 +70,7 @@ func main() {
 	defer log.Info("Connection cache is closed")
 	for {
 		if _, err = dao.TxnPing(ctx, db, func(cnt int, interval time.Duration) {
-			log.Info("Ping", "count", cnt, "interval", interval)
+			log.Info("Ping", "count", cnt, "interval", interval, "target", target)
 		}); err == nil {
 			break
 		}
@@ -103,8 +104,8 @@ func run(ctx context.Context, tick func(int32, *sync.WaitGroup)) {
 	wg.Wait()
 }
 
-func open() (error, *sql.DB, func()) {
-	db, err := sql.Open(address())
+func open(driver string, uri string) (error, *sql.DB, func()) {
+	db, err := sql.Open(driver, uri)
 	if err != nil {
 		log.Error(err, "")
 		return err, nil, nil
@@ -119,8 +120,7 @@ func open() (error, *sql.DB, func()) {
 	}
 }
 
-func address() (string, string) {
-	var addr string
+func host() (addr string) {
 	addr = os.Getenv("DB_ADDR_UDS")
 	if len(addr) > 0 {
 		addr = fmt.Sprintf("unix(%s)", addr)
@@ -131,6 +131,11 @@ func address() (string, string) {
 		}
 		addr = fmt.Sprintf("tcp(%s)", addr)
 	}
+	return
+}
+
+func address() (string, string, string) {
+	h := host()
 	passwd := os.Getenv("DB_PASSWORD")
-	return "mysql", fmt.Sprintf("example:%s@%s/example?charset=utf8", passwd, addr)
+	return "mysql", fmt.Sprintf("example:%s@%s/example?charset=utf8", passwd, h), h
 }

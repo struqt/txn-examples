@@ -10,9 +10,8 @@ import (
 
 type DemoStmt = *demo.Queries
 
-type DemoDoer[R any] struct {
-	TxnDoerBase[DemoStmt]
-	Result R
+type DemoDoer[Result any] struct {
+	TxnDoerBase[DemoStmt, Result]
 }
 
 func (do *DemoDoer[_]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error) {

@@ -33,10 +33,10 @@ github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/struqt/logging v0.0.1 h1:ju0yvpF7Cwy04iLwBtGtKGwB1a3waNjEk2qjRaoWgGk=
 github.com/struqt/logging v0.0.1/go.mod h1:f/YPG5tdUiUux+7R8/wCzeCx1AvrdSAnh98AjXyb2XI=
-github.com/struqt/txn v0.0.7 h1:KSNfQoLdoxTijrVeYl/mMPBD4c9+m0cx7y6TyLdIHGU=
-github.com/struqt/txn v0.0.7/go.mod h1:XhaY4Jf4Y7GgIBTRzxDceEa37C3ekQJ9HYiTxXX23ZE=
-github.com/struqt/txn/txn_pgx v0.0.7 h1:ZsPwWqnbIUhP+4C8MWfqC76v2ZgcETgprj4XJOUtFlg=
-github.com/struqt/txn/txn_pgx v0.0.7/go.mod h1:d64ilb14eMYcLfEOvHGNMiabdquj3jvG2RsHXZawT8s=
+github.com/struqt/txn v0.0.8 h1:O5qRoAenb5Kz7lHVysRtfCFtUVRCOP95xOUW5tsliBM=
+github.com/struqt/txn v0.0.8/go.mod h1:XhaY4Jf4Y7GgIBTRzxDceEa37C3ekQJ9HYiTxXX23ZE=
+github.com/struqt/txn/txn_pgx v0.0.8 h1:8bZy86KV9qARL0rMNwVDkdMhbkElFfit8Wh7lgzeFUY=
+github.com/struqt/txn/txn_pgx v0.0.8/go.mod h1:3YC9jj8105m3XoIzU843cWSo44jbfiiM7VWMVxOzYtU=
 golang.org/x/crypto v0.13.0 h1:mvySKfSWJ+UKUii46M40LOvyWfN0s2U+46/jDd0e6Ck=
 golang.org/x/crypto v0.13.0/go.mod h1:y6Z2r+Rw4iayiXXAIxJIDAJ1zMW4yaTpebo8fPOliYc=
 golang.org/x/sync v0.3.0 h1:ftCYgMx6zT/asHUrPw8BLLscYtGznsLAnjq5RH9P66E=

@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/struqt/logging"
+	"github.com/struqt/txn"
 
 	"examples/sqlc/pgx/dao"
 	"examples/sqlc/pgx/dao/demo"
@@ -30,18 +31,18 @@ func init() {
 	dao.Setup(log)
 }
 
-func tick(ctx context.Context, d dao.Demo, count int32, wg *sync.WaitGroup) {
+func tick(ctx context.Context, mod dao.Demo, count int32, wg *sync.WaitGroup) {
 	defer wg.Done()
 	log.V(0).Info(fmt.Sprintf("tick %d", count))
-	stat(ctx, d)
-	_, _ = dao.TxnRwExecute(ctx, d, push(), dao.PushAuthorDo)
-	_, _ = dao.TxnRoExecute(ctx, d, &dao.DemoDoer[[]demo.Author]{}, dao.ListAuthorDo)
-	_, _ = dao.TxnRoExecute(ctx, d, &dao.LastAuthor{}, dao.LastAuthorDo)
+	_, _ = stat(ctx, mod)
+	_, _ = dao.TxnRwExecute(ctx, mod, push(), dao.PushAuthorDo)
+	_, _ = dao.TxnRoExecute(ctx, mod, &dao.DemoDoer[[]demo.Author]{}, dao.ListAuthorDo, txn.WithTitle("TxnRo`List"))
+	_, _ = dao.TxnRoExecute(ctx, mod, &dao.LastAuthor{}, dao.LastAuthorDo)
 }
 
-func stat(ctx context.Context, mod dao.Demo) *demo.StatAuthorRow {
+func stat(ctx context.Context, mod dao.Demo) (*demo.StatAuthorRow, error) {
 	type _doer = dao.DemoDoer[demo.StatAuthorRow]
-	x, _ := dao.TxnRoExecute(ctx, mod, &_doer{}, func(ctx context.Context, do *_doer) error {
+	do, err := dao.TxnRoExecute(ctx, mod, &_doer{}, func(ctx context.Context, do *_doer) error {
 		if result, err := do.Stmt().StatAuthor(ctx); err != nil {
 			return err
 		} else {
@@ -49,13 +50,12 @@ func stat(ctx context.Context, mod dao.Demo) *demo.StatAuthorRow {
 			log.WithName(do.Title()).V(2).Info("     :", "result", do.Result)
 			return nil
 		}
-	})
-	return &x.Result
+	}, txn.WithTitle("TxnRo`Stat"))
+	return &do.Result, err
 }
 
 func push() *dao.PushAuthor {
 	do := &dao.PushAuthor{}
-	do.SetTitle("TxnRw_PushAuthor")
 	do.Insert = demo.CreateAuthorParams{
 		Name: "Brian Kernighan",
 		Bio: pgtype.Text{

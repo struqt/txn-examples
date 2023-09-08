@@ -33,14 +33,16 @@ func TxnBegin(ctx context.Context, db TxnBeginner, options TxnOptions) (TxnImpl,
 
 func TxnRwExecute[Stmt TxnStmt, Doer TxnDoer[Stmt]](
 	ctx context.Context, mod TxnModule[Stmt], do Doer,
-	fn txn.DoFunc[TxnOptions, TxnBeginner, Doer],
+	fn txn.DoFunc[TxnOptions, TxnBeginner, Doer], setters ...txn.DoerFieldSetter,
 ) (Doer, error) {
-	return t.ExecuteRw[Stmt, Doer](ctx, log, mod, do, fn)
+	c := context.WithValue(ctx, "logger", log)
+	return t.ExecuteRw[Stmt, Doer](c, mod, do, fn, setters...)
 }
 
 func TxnRoExecute[Stmt TxnStmt, Doer TxnDoer[Stmt]](
 	ctx context.Context, mod TxnModule[Stmt], do Doer,
-	fn txn.DoFunc[TxnOptions, TxnBeginner, Doer],
+	fn txn.DoFunc[TxnOptions, TxnBeginner, Doer], setters ...txn.DoerFieldSetter,
 ) (Doer, error) {
-	return t.ExecuteRo[Stmt](ctx, log, mod, do, fn)
+	c := context.WithValue(ctx, "logger", log)
+	return t.ExecuteRo[Stmt](c, mod, do, fn, setters...)
 }

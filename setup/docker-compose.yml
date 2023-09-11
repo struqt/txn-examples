@@ -49,5 +49,25 @@ services:
     networks: { proxy: { } }
   # example-mysql #############################################################
 
+  example-mongo:
+    container_name: example-mongo
+    hostname: mongo
+    image: mongo:6.0.9
+    restart: unless-stopped
+    user: root
+    read_only: true
+    tmpfs: [ /tmp ]
+    volumes:
+      - "./mongo/data:/data/db"
+      - "./mongo/etc/keyfile:/etc/mongo/mongodb-keyfile:ro"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: example
+      MONGO_INITDB_ROOT_PASSWORD: Example#123789
+    command: [ "mongod", "--auth", "--replSet", "rs0", "--keyFile", "/etc/mongo/mongodb-keyfile" ]
+    ports:
+      - "27017-27019:27017-27019"
+    networks: { proxy: { } }
+  # example-mongo #############################################################
+
 # services
-# 2023-08-29
+# 2023-09-11

@@ -29,6 +29,7 @@ which go
 mkdir -p  "${OUT_DIR:?}"
 rm    -rf "${OUT_DIR:?}"/*
 
-build_release mysql
-build_release pg
-build_release pgx
+build_release sqlc/mysql
+build_release sqlc/pg
+build_release sqlc/pgx
+build_release mongo

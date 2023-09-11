@@ -3,7 +3,7 @@
 ## Build release version
 
 ```shell
-bash sqlc/build.sh
+bash build.sh
 ```
 
 ## Setup development environment

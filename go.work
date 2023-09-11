@@ -2,9 +2,11 @@ go 1.20
 
 use (
 	logging
+	txn
+	txn/txn_pgx
+	txn/txn_mongo
 	sqlc/mysql
 	sqlc/pg
 	sqlc/pgx
-	txn
-	txn/txn_pgx
+	mongo
 )

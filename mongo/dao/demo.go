@@ -7,27 +7,44 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type DemoStmt = TxnBeginner
-
 type DemoDoer[Result any] struct {
-	TxnDoerBase[DemoStmt, Result]
+	TxnDoerBase[Result]
 }
 
-func (do *DemoDoer[_]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error) {
-	if w, err := TxnBegin(ctx, db, do.Options()); err != nil {
-		return nil, err
-	} else {
-		do.SetClient(db)
-		return w, nil
+type ListAuthor struct {
+	DemoDoer[[]bson.M]
+	len int
+}
+
+func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
+	log := log.WithName(do.Title()).V(2)
+	client := do.Client()
+	collection := client.Database("demo").Collection("authors")
+	findOptions := options.Find()
+	findOptions.SetSort(bson.M{"_id": -1})
+	findOptions.SetLimit(10)
+	cur, err := collection.Find(ctx, bson.M{}, findOptions)
+	if err != nil {
+		return err
 	}
-}
-
-type Demo = TxnModule[DemoStmt]
-
-func NewDemo(db TxnBeginner) Demo {
-	i := &TxnModuleBase[DemoStmt]{}
-	i.Init(db)
-	return i
+	defer func(cur *mongo.Cursor) { _ = cur.Close(context.Background()) }(cur)
+	for cur.Next(ctx) {
+		var doc bson.M
+		err := cur.Decode(&doc)
+		if err != nil {
+			return err
+		}
+		do.len++
+		do.Result = append(do.Result, doc)
+	}
+	log.Info("|", "len", do.len)
+	for _, record := range do.Result {
+		log.Info("|", "_id", record["_id"], "created_at", record["createdAt"])
+	}
+	if cur.Err() != nil {
+		return cur.Err()
+	}
+	return nil
 }
 
 type PushAuthor struct {
@@ -52,7 +69,6 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 	}
 	//log.Info("|", "inserted", doc)
 	log.Info("|", "inserted_id", doc["_id"], "created_at", doc["createdAt"])
-
 	total, err := collection.CountDocuments(ctx, bson.D{})
 	if err != nil {
 		return err
@@ -81,39 +97,5 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 	log.Info("|", "total", total)
 	//panic("fake panic")
 	//return errors.New("intended for test")
-	return nil
-}
-
-type ListAuthor struct {
-	DemoDoer[any]
-	len int
-}
-
-func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
-	log := log.WithName(do.Title()).V(2)
-	client := do.Client()
-	//options.Database()
-	collection := client.Database("demo").Collection("authors")
-	findOptions := options.Find()
-	findOptions.SetSort(bson.M{"_id": -1})
-	findOptions.SetLimit(10)
-	cur, err := collection.Find(ctx, bson.M{}, findOptions)
-	if err != nil {
-		return err
-	}
-	defer func(cur *mongo.Cursor) { _ = cur.Close(context.Background()) }(cur)
-	for cur.Next(ctx) {
-		var doc bson.M
-		err := cur.Decode(&doc)
-		if err != nil {
-			return err
-		}
-		do.len++
-		log.Info("|", "_id", doc["_id"], "created_at", doc["createdAt"])
-	}
-	if cur.Err() != nil {
-		return cur.Err()
-	}
-	log.V(2).Info("|", "len", do.len)
 	return nil
 }

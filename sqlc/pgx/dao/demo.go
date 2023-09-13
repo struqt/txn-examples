@@ -23,9 +23,9 @@ func (do *DemoDoer[R]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error
 	}
 }
 
-type Demo = TxnModule[DemoQueries]
+type DemoModule = TxnModule[DemoQueries]
 
-func NewDemo(db TxnBeginner) Demo {
+func NewDemo(db TxnBeginner) DemoModule {
 	i := &TxnModuleBase[DemoQueries]{}
 	i.Init(db)
 	return i

@@ -26,6 +26,12 @@ func Setup(logger logging.Logger) {
 	})
 }
 
+func TearDown() {
+	if Demo() != nil && Demo().Beginner() != nil {
+		_ = Demo().Beginner().Disconnect(context.Background())
+	}
+}
+
 func Demo() TxnModule {
 	return demo
 }

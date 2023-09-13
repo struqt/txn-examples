@@ -26,9 +26,9 @@ func (do *DemoDoer[_]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error
 	}
 }
 
-type Demo = TxnModule[DemoStmt]
+type DemoModule = TxnModule[DemoStmt]
 
-func NewDemo(db TxnBeginner) Demo {
+func NewDemo(db TxnBeginner) DemoModule {
 	i := &TxnModuleBase[DemoStmt]{}
 	i.Init(db, func(ctx context.Context, db TxnBeginner) (DemoStmt, error) {
 		return demo.Prepare(ctx, db)

@@ -18,7 +18,7 @@ func (do *DemoDoer[R]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error
 	if w, err := TxnBegin(ctx, db, do.Options()); err != nil {
 		return nil, err
 	} else {
-		do.SetStmt(demo.New(w.Raw))
+		do.SetStmt(demo.New(w.Raw()))
 		return w, nil
 	}
 }

@@ -21,7 +21,7 @@ func (do *DemoDoer[_]) BeginTxn(ctx context.Context, db TxnBeginner) (Txn, error
 		if do.Stmt() == nil {
 			do.SetStmt(demo.New(db))
 		}
-		do.SetStmt(do.Stmt().WithTx(w.Raw))
+		do.SetStmt(do.Stmt().WithTx(w.Raw()))
 		return w, nil
 	}
 }

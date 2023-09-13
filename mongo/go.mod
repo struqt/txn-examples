@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/struqt/logging v0.0.1
-	github.com/struqt/txn v0.0.9
-	github.com/struqt/txn/txn_mongo v0.0.9
+	github.com/struqt/txn v0.0.10
+	github.com/struqt/txn/txn_mongo v0.0.10
 	go.mongodb.org/mongo-driver v1.12.1
 )
 

@@ -5,8 +5,8 @@ go 1.20
 require (
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/struqt/logging v0.0.1
-	github.com/struqt/txn v0.0.9
-	github.com/struqt/txn/txn_pgx v0.0.8
+	github.com/struqt/txn v0.0.10
+	github.com/struqt/txn/txn_pgx v0.0.10
 )
 
 require (

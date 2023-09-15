@@ -8,5 +8,6 @@ use (
 	sqlc/mysql
 	sqlc/pg
 	sqlc/pgx
+	sqlc/sqlite
 	mongo
 )

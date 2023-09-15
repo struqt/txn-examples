@@ -1,0 +1,10 @@
+version: 2
+sql:
+  - engine: "sqlite"
+    gen:
+      go:
+        emit_prepared_queries: true
+        out: "dao/demo"
+        package: "demo"
+    schema: "schema.sql"
+    queries: "query.sql"

@@ -14,14 +14,15 @@ build_release() {
   local module="$1"
   local file
   file="${module:?}_demo_$(go env GOHOSTOS)_$(go env GOARCH)"
-  pushd "${SELF_DIR:?}/${module:?}"
+  echo "Build: ${OUT_DIR:?}/${file:?}"
+  pushd "${SELF_DIR:?}/${module:?}" >/dev/null || exit 1
   go mod tidy
   go get -d -v -u all
   go mod tidy
   gofmt -w -l -d -s .
   go build -ldflags "-s -w" -o "${OUT_DIR:?}/${file:?}"
-  echo " Built: ${OUT_DIR:?}/${file:?}"
-  popd
+  echo -e "Built: ${OUT_DIR:?}/${file:?}\n"
+  popd >/dev/null || exit 1
 }
 
 which go
@@ -29,7 +30,8 @@ which go
 mkdir -p  "${OUT_DIR:?}"
 rm    -rf "${OUT_DIR:?}"/*
 
+build_release mongo
 build_release sqlc/mysql
 build_release sqlc/pg
 build_release sqlc/pgx
-build_release mongo
+build_release sqlc/sqlite

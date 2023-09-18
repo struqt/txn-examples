@@ -37,7 +37,7 @@ func NewDemo(db TxnBeginner) DemoModule {
 }
 
 type ListAuthor struct {
-	DemoDoer[DemoQueries]
+	DemoDoer[[]demo.Author]
 	len int
 }
 
@@ -47,13 +47,14 @@ func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
 	if err != nil {
 		return err
 	}
+	do.Result = authors
 	do.len = len(authors)
 	log.V(2).Info(" :", "len", do.len)
 	return nil
 }
 
 type LastAuthor struct {
-	DemoDoer[DemoQueries]
+	DemoDoer[demo.Author]
 	id int64
 }
 
@@ -69,6 +70,7 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 	}
 	if id, ok := stat.Max.(int64); ok {
 		fetched, err := do.Stmt().GetAuthor(ctx, id)
+		do.Result = fetched
 		do.id = id
 		if err != nil {
 			return err
@@ -83,7 +85,7 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 }
 
 type PushAuthor struct {
-	DemoDoer[DemoQueries]
+	DemoDoer[demo.Author]
 	Insert   demo.CreateAuthorParams
 	inserted int64
 }
@@ -101,6 +103,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 	if err != nil {
 		return err
 	}
+	do.Result = fetched
 	log.V(2).Info(":", "equals", reflect.DeepEqual(inserted, fetched))
 	count := 1
 	for {

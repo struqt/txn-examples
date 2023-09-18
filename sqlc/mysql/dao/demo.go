@@ -37,7 +37,7 @@ func NewDemo(db TxnBeginner) DemoModule {
 }
 
 type ListAuthor struct {
-	DemoDoer[any]
+	DemoDoer[[]demo.Author]
 	len int
 }
 
@@ -47,13 +47,14 @@ func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
 	if err != nil {
 		return err
 	}
+	do.Result = authors
 	do.len = len(authors)
 	log.V(2).Info(" |", "len", do.len)
 	return nil
 }
 
 type LastAuthor struct {
-	DemoDoer[any]
+	DemoDoer[*demo.Author]
 	id int64
 }
 
@@ -73,6 +74,7 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 		if err != nil {
 			return err
 		}
+		do.Result = &fetched
 		log.V(2).Info(" |", "fetched.id", fetched.ID, "name", fetched.Name, "bio", fetched.Bio.String)
 	} else {
 		return fmt.Errorf("the value is not of type int64")
@@ -83,7 +85,7 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 }
 
 type PushAuthor struct {
-	DemoDoer[any]
+	DemoDoer[demo.Author]
 	Insert   demo.CreateAuthorParams
 	inserted int64
 }
@@ -101,6 +103,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 	if err != nil {
 		return err
 	}
+	do.Result = fetched
 	log.V(2).Info("|", "equals", reflect.DeepEqual(do.inserted, fetched.ID))
 	count := 1
 	for {

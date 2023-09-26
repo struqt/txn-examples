@@ -5,18 +5,23 @@
 
 version: 2
 updates:
+
   - package-ecosystem: "gomod"
-    schedule: { interval: "weekly" }
+    schedule: { interval: "daily" }
     directory: "/sqlc/mysql"
 
   - package-ecosystem: "gomod"
-    schedule: { interval: "weekly" }
+    schedule: { interval: "daily" }
     directory: "/sqlc/pg"
 
   - package-ecosystem: "gomod"
-    schedule: { interval: "weekly" }
+    schedule: { interval: "daily" }
     directory: "/sqlc/pgx"
 
   - package-ecosystem: "gomod"
-    schedule: { interval: "weekly" }
+    schedule: { interval: "daily" }
     directory: "/sqlc/sqlite"
+
+  - package-ecosystem: "gomod"
+    schedule: { interval: "daily" }
+    directory: "/mongo"

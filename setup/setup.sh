@@ -27,5 +27,7 @@ go_install_bin() {
   else echo "Installed: $package" '-->' "$(go version -v "$cmd_path")"; fi
 }
 
-go_install_bin  sqlc v1.20.0  'github.com/sqlc-dev/sqlc/cmd/sqlc'
+go_install_bin  atlas  v0.13.1  'ariga.io/atlas/cmd/atlas'
+go_install_bin  sqlc   v1.20.0  'github.com/sqlc-dev/sqlc/cmd/sqlc'
+
 echo 'Installation finished'

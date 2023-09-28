@@ -91,5 +91,5 @@ func host() (addr string) {
 func address() (string, string, string) {
 	h := host()
 	passwd := os.Getenv("DB_PASSWORD")
-	return "mysql", fmt.Sprintf("example:%s@%s/example?charset=utf8", passwd, h), h
+	return "mysql", fmt.Sprintf("root:%s@%s/example?charset=utf8", passwd, h), h
 }

@@ -3,20 +3,19 @@ package dao
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"sync"
 	"time"
-
-	"github.com/struqt/logging"
 )
 
 var (
 	once    sync.Once
-	log     logging.Logger
+	log     *slog.Logger
 	demoMod DemoModule
 )
 
-func Setup(logger logging.Logger) {
+func Setup(logger *slog.Logger) {
 	once.Do(func() {
 		log = logger
 		initDemo()
@@ -43,7 +42,7 @@ func initDemo() {
 		db  *sql.DB
 	)
 	if err, db = open(driver, uri); err != nil {
-		log.Error(err, "Failed to set up connection pool")
+		log.Error(err.Error(), "Failed to set up connection pool")
 		return
 	}
 	ping(db, addr)
@@ -57,7 +56,7 @@ func ping(db TxnBeginner, addr string) {
 		}); err == nil {
 			break
 		} else {
-			log.V(1).Info("Ping", "count", cnt, "err", err)
+			log.Info("Ping", "count", cnt, "err", err)
 		}
 	}
 }
@@ -65,7 +64,7 @@ func ping(db TxnBeginner, addr string) {
 func open(driver string, uri string) (error, *sql.DB) {
 	db, err := sql.Open(driver, uri)
 	if err != nil {
-		log.Error(err, "")
+		log.Error(err.Error(), "")
 		return err, nil
 	}
 	db.SetMaxOpenConns(2)

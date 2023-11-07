@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 	"examples/sqlc/pgx/dao/demo"
 )
 
-var log logging.Logger
+var log *slog.Logger
 
 func init() {
 	logging.LogConsoleThreshold = -128
@@ -36,7 +37,7 @@ func main() {
 
 func do(ctx context.Context, count int32) {
 	mod := dao.Demo()
-	log.V(0).Info(fmt.Sprintf("tick %d", count))
+	log.Info(fmt.Sprintf("tick %d", count))
 	_, _ = stat(ctx, mod)
 	_, _ = dao.TxnRwExecute(ctx, mod, push(), dao.PushAuthorDo)
 	_, _ = dao.TxnRoExecute(ctx, mod, &dao.DemoDoer[[]demo.Author]{}, dao.ListAuthorDo, txn.WithTitle("TxnRo`List"))
@@ -50,7 +51,7 @@ func stat(ctx context.Context, mod dao.DemoModule) (*demo.StatAuthorRow, error) 
 			return err
 		} else {
 			do.Result = result
-			log.WithName(do.Title()).V(2).Info("     :", "result", do.Result)
+			log.With("T", do.Title()).Info("     :", "result", do.Result)
 			return nil
 		}
 	}, txn.WithTitle("TxnRo`Stat"))

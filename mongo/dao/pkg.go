@@ -3,23 +3,23 @@ package dao
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/struqt/logging"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
 	once sync.Once
-	log  logging.Logger
+	log  *slog.Logger
 	demo TxnModule
 )
 
-func Setup(logger logging.Logger) {
+func Setup(logger *slog.Logger) {
 	once.Do(func() {
 		log = logger
 		initDemo()
@@ -40,7 +40,7 @@ func initDemo() {
 	addr, uri := address()
 	client, err := open(context.Background(), uri)
 	if err != nil {
-		log.Error(err, "Failed to set up connection pool")
+		log.Error(err.Error(), "Failed to set up connection pool")
 		return
 	}
 	ping(client, addr)
@@ -54,7 +54,7 @@ func ping(client *mongo.Client, addr string) {
 		}); err == nil {
 			break
 		} else {
-			log.V(1).Info("Ping", "count", cnt, "err", err)
+			log.Info("Ping", "count", cnt, "err", err)
 		}
 	}
 }

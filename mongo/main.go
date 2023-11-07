@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 	"examples/mongo/dao"
 )
 
-var log logging.Logger
+var log *slog.Logger
 
 func init() {
 	logging.LogConsoleThreshold = -128
@@ -54,7 +55,7 @@ func stat(ctx context.Context) (int64, error) {
 			return err
 		}
 		do.Result = total
-		log.WithName(do.Title()).V(2).Info(":", "result", do.Result)
+		log.With("T", do.Title()).Info(":", "result", do.Result)
 		return nil
 	}, txn.WithTitle("Txn`AdHocStat"))
 	return d.Result, err

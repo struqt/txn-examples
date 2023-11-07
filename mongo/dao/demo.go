@@ -17,7 +17,7 @@ type ListAuthor struct {
 }
 
 func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
-	log := log.WithName(do.Title()).V(2)
+	log := log.With("T", do.Title())
 	client := do.Client()
 	collection := client.Database("demo").Collection("authors")
 	findOptions := options.Find()
@@ -53,7 +53,7 @@ type PushAuthor struct {
 }
 
 func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
-	log := log.WithName(do.Title()).V(2)
+	log := log.With("T", do.Title())
 	client := do.Client()
 	//options.Database()
 	collection := client.Database("demo").Collection("authors")

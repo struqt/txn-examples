@@ -32,13 +32,13 @@ func NewDemo(db TxnBeginner) DemoModule {
 }
 
 func ListAuthorDo(ctx context.Context, do *DemoDoer[[]demo.Author]) error {
-	log := log.WithName(do.Title())
+	log := log.With("T", do.Title())
 	authors, err := do.Stmt().ListAuthors(ctx)
 	if err != nil {
 		return err
 	}
 	do.Result = authors
-	log.V(2).Info(" :", "len", len(authors))
+	log.Info(" :", "len", len(authors))
 	return nil
 }
 
@@ -48,12 +48,12 @@ type LastAuthor struct {
 }
 
 func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
-	log := log.WithName(do.Title())
+	log := log.With("T", do.Title())
 	stat, err := do.Stmt().StatAuthor(ctx)
 	if err != nil {
 		return err
 	}
-	log.V(2).Info(" :", "stat", stat)
+	log.Info(" :", "stat", stat)
 	if stat.Size <= 0 {
 		return nil
 	}
@@ -64,7 +64,7 @@ func LastAuthorDo(ctx context.Context, do *LastAuthor) error {
 		if err != nil {
 			return err
 		}
-		log.V(2).Info(" :", "fetched", fetched)
+		log.Info(" :", "fetched", fetched)
 	} else {
 		return fmt.Errorf("the value is not of type int64")
 	}
@@ -79,19 +79,19 @@ type PushAuthor struct {
 }
 
 func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
-	log := log.WithName(do.Title())
+	log := log.With("T", do.Title())
 	var err error
 	inserted, err := do.Stmt().CreateAuthor(ctx, do.Insert)
 	if err != nil {
 		return err
 	}
 	do.Result = inserted.ID
-	log.V(2).Info(" :", "inserted", inserted)
+	log.Info(" :", "inserted", inserted)
 	fetched, err := do.Stmt().GetAuthor(ctx, inserted.ID)
 	if err != nil {
 		return err
 	}
-	log.V(2).Info(" :", "equals", reflect.DeepEqual(inserted, fetched))
+	log.Info(" :", "equals", reflect.DeepEqual(inserted, fetched))
 	count := 1
 	for {
 		if count > 10 {
@@ -101,7 +101,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 		if err != nil {
 			return err
 		}
-		log.V(2).Info(":", "stat", stat)
+		log.Info(":", "stat", stat)
 		if stat.Size <= 10 {
 			break
 		}

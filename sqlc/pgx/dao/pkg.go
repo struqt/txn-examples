@@ -3,22 +3,22 @@ package dao
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/struqt/logging"
 )
 
 var (
 	once    sync.Once
-	log     logging.Logger
+	log     *slog.Logger
 	demoMod DemoModule
 )
 
-func Setup(logger logging.Logger) {
+func Setup(logger *slog.Logger) {
 	once.Do(func() {
 		log = logger
 		initDemo()
@@ -40,7 +40,7 @@ func initDemo() {
 	addr, uri := address()
 	pool, err := open(context.Background(), uri)
 	if err != nil {
-		log.Error(err, "Failed to set up connection pool")
+		log.Error(err.Error(), "Failed to set up connection pool")
 		return
 	}
 	ping(pool, addr)
@@ -54,7 +54,7 @@ func ping(pool TxnBeginner, addr string) {
 		}); err == nil {
 			break
 		} else {
-			log.V(1).Info("Ping", "count", cnt, "err", err)
+			log.Info("Ping", "count", cnt, "err", err)
 		}
 	}
 }

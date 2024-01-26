@@ -12,9 +12,10 @@ bash build.sh
 
 1. Start database servers
 2. Finish the `DDL` works
-3. Set two environment variables: `DB_HOST`, `DB_PASSWORD`
 
 ## Run go modules
+
+Set environment variables: `DB_ADDR_TCP`, `DB_PASSWORD`
 
 ```shell
 go run examples/sqlc/pgx
@@ -26,4 +27,14 @@ go run examples/sqlc/pg
 
 ```shell
 go run examples/sqlc/mysql
+```
+
+```shell
+go run examples/sqlc/sqlite
+```
+
+Set environment variable: `DB_ADDR_PATH`
+
+```shell
+go run examples/mongo
 ```

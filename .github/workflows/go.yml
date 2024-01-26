@@ -17,8 +17,8 @@ jobs:
           '^1.21.5',
         ]
         os: [
-          #ubuntu-latest,
-          ubuntu-20.04,
+          ubuntu-latest,
+          #ubuntu-20.04,
           macos-13,
           windows-2022,
         ]
@@ -65,3 +65,23 @@ jobs:
           retention-days: 10
           name: demo_mysql_${{ runner.os }}_${{ runner.arch }}
           path: ${{ github.workspace }}/sqlc/demo_mysql_${{ runner.os }}_${{ runner.arch }}
+
+      - name: Build SQLite Example
+        working-directory: ${{ github.workspace }}/sqlc/sqlite
+        run: go build -ldflags "-s -w" -v -o ../demo_sqlite_${{ runner.os }}_${{ runner.arch }}
+      - name: Upload SQLite Example
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 10
+          name: demo_sqlite_${{ runner.os }}_${{ runner.arch }}
+          path: ${{ github.workspace }}/sqlc/demo_sqlite_${{ runner.os }}_${{ runner.arch }}
+
+      - name: Build Mongo Example
+        working-directory: ${{ github.workspace }}/mongo
+        run: go build -ldflags "-s -w" -v -o ../demo_mongo_${{ runner.os }}_${{ runner.arch }}
+      - name: Upload Mongo Example
+        uses: actions/upload-artifact@v4
+        with:
+          retention-days: 10
+          name: demo_mongo_${{ runner.os }}_${{ runner.arch }}
+          path: ${{ github.workspace }}/sqlc/demo_mongo_${{ runner.os }}_${{ runner.arch }}

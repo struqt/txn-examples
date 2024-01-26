@@ -1,5 +1,7 @@
 # Examples
 
+[![Go Build](https://github.com/struqt/txn-examples/actions/workflows/go.yml/badge.svg)](https://github.com/struqt/txn-examples/actions/workflows/go.yml)
+
 ## Build release version
 
 ```shell

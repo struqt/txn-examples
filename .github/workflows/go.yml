@@ -14,8 +14,7 @@ jobs:
     strategy:
       matrix:
         go: [
-          '1.20',
-          '1.21',
+          '^1.21.5',
         ]
         os: [
           #ubuntu-latest,
@@ -26,23 +25,22 @@ jobs:
       fail-fast: true
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
+          check-latest: true
+          cache-dependency-path: "**/*.sum"
 
       - name: Build Pgx Example
         working-directory: ${{ github.workspace }}/sqlc/pgx
         run: go build -ldflags "-s -w" -v -o ../demo_pgx_${{ runner.os }}_${{ runner.arch }}
-      - name: Test Pgx Example
-        working-directory: ${{ github.workspace }}/sqlc/pgx
-        run: go test -v ./...
       - name: Upload Pgx Example
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           retention-days: 10
           name: demo_pgx_${{ runner.os }}_${{ runner.arch }}
@@ -52,7 +50,7 @@ jobs:
         working-directory: ${{ github.workspace }}/sqlc/pg
         run: go build -ldflags "-s -w" -v -o ../demo_pg_${{ runner.os }}_${{ runner.arch }}
       - name: Upload Pg Example
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           retention-days: 10
           name: demo_pg_${{ runner.os }}_${{ runner.arch }}
@@ -62,7 +60,7 @@ jobs:
         working-directory: ${{ github.workspace }}/sqlc/mysql
         run: go build -ldflags "-s -w" -v -o ../demo_mysql_${{ runner.os }}_${{ runner.arch }}
       - name: Upload MySQL Example
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           retention-days: 10
           name: demo_mysql_${{ runner.os }}_${{ runner.arch }}

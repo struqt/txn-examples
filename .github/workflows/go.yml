@@ -84,4 +84,4 @@ jobs:
         with:
           retention-days: 10
           name: demo_mongo_${{ runner.os }}_${{ runner.arch }}
-          path: ${{ github.workspace }}/sqlc/demo_mongo_${{ runner.os }}_${{ runner.arch }}
+          path: ${{ github.workspace }}/demo_mongo_${{ runner.os }}_${{ runner.arch }}

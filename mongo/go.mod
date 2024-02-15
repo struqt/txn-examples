@@ -8,7 +8,7 @@ require (
 	github.com/struqt/logging v0.1.1
 	github.com/struqt/txn v0.1.3
 	github.com/struqt/txn/txn_mongo v0.1.3
-	go.mongodb.org/mongo-driver v1.13.1
+	go.mongodb.org/mongo-driver v1.14.0
 )
 
 require (

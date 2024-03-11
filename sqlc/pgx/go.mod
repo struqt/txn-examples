@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.21.0
 
 require (
-	github.com/jackc/pgx/v5 v5.5.3
+	github.com/jackc/pgx/v5 v5.5.5
 	github.com/struqt/logging v0.1.1
 	github.com/struqt/txn v0.1.3
 	github.com/struqt/txn/txn_pgx v0.1.3

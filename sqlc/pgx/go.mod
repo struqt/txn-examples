@@ -7,8 +7,8 @@ toolchain go1.21.0
 require (
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/struqt/logging v0.1.1
-	github.com/struqt/txn v0.1.3
-	github.com/struqt/txn/txn_pgx v0.1.4
+	github.com/struqt/txn v0.1.4
+	github.com/struqt/txn/txn_pgx v0.1.5
 )
 
 require (
@@ -20,9 +20,9 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/rs/zerolog v1.32.0 // indirect
-	golang.org/x/crypto v0.19.0 // indirect
-	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )

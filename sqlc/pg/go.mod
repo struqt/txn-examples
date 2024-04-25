@@ -7,7 +7,7 @@ toolchain go1.21.0
 require (
 	github.com/lib/pq v1.10.9
 	github.com/struqt/logging v0.1.1
-	github.com/struqt/txn v0.1.3
+	github.com/struqt/txn v0.1.4
 )
 
 require (

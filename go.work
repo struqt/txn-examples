@@ -2,12 +2,12 @@ go 1.21
 
 use (
 	logging
-	txn
-	txn/txn_pgx
-	txn/txn_mongo
+	mongo
 	sqlc/mysql
 	sqlc/pg
 	sqlc/pgx
 	sqlc/sqlite
-	mongo
+	txn
+	txn/txn_mongo
+	txn/txn_pgx
 )

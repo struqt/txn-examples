@@ -14,29 +14,27 @@ import (
 	"examples/mongo/dao"
 )
 
-var log *slog.Logger
-
 func init() {
-	logging.LogConsoleThreshold = -128
-	log = logging.NewLogger("")
+	logging.LogConsoleThreshold = 2
+	slog.SetDefault(logging.DefaultLogger)
 }
 
 func main() {
-	log.Info("Process is starting ...")
+	slog.Info("Process is starting ...")
 	defer os.Exit(0)
-	defer log.Info("Process is ending ...")
+	defer slog.Info("Process is ending ...")
 	ctx, cancel := context.WithCancel(context.Background())
-	defer log.Info("Context is cancelled")
+	defer slog.Info("Context is cancelled")
 	defer cancel()
 	defer dao.TearDown()
-	dao.Setup(log)
+	dao.Setup()
 	do(ctx, 0)
 	txn.RunTicker(ctx, 300*time.Millisecond, 5, do)
 }
 
 func do(ctx context.Context, tick int32) {
 	mod := dao.Demo()
-	log.Info(fmt.Sprintf("tick %d", tick))
+	slog.Info(fmt.Sprintf("tick %d", tick))
 	i := map[string]any{"name": "Brian Kernighan", "age": 30, "createdAt": time.Now()}
 	_, _ = dao.TxnExecute(ctx, mod, &dao.ListAuthor{}, dao.ListAuthorDo)
 	_, _ = dao.TxnExecute(ctx, mod, &dao.PushAuthor{Insert: i}, dao.PushAuthorDo)
@@ -55,7 +53,7 @@ func stat(ctx context.Context) (int64, error) {
 			return err
 		}
 		do.Result = total
-		log.With("T", do.Title()).Info(":", "result", do.Result)
+		slog.With("T", do.Title()).Info(":", "result", do.Result)
 		return nil
 	}, txn.WithTitle("Txn`AdHocStat"))
 	return d.Result, err

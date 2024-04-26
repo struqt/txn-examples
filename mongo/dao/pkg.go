@@ -15,13 +15,11 @@ import (
 
 var (
 	once sync.Once
-	log  *slog.Logger
 	demo TxnModule
 )
 
-func Setup(logger *slog.Logger) {
+func Setup() {
 	once.Do(func() {
-		log = logger
 		initDemo()
 	})
 }
@@ -40,7 +38,7 @@ func initDemo() {
 	addr, uri := address()
 	client, err := open(context.Background(), uri)
 	if err != nil {
-		log.Error(err.Error(), "Failed to set up connection pool")
+		slog.Error(err.Error(), "Failed to set up connection pool")
 		return
 	}
 	ping(client, addr)
@@ -50,11 +48,11 @@ func initDemo() {
 func ping(client *mongo.Client, addr string) {
 	for {
 		if cnt, err := TxnPing(client, func(cnt int, delay time.Duration) {
-			log.Info("Ping", "count", cnt, "delay~", delay, "target", addr)
+			slog.Info("Ping", "count", cnt, "delay~", delay, "target", addr)
 		}); err == nil {
 			break
 		} else {
-			log.Info("Ping", "count", cnt, "err", err)
+			slog.Info("Ping", "count", cnt, "err", err)
 		}
 	}
 }

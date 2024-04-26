@@ -2,6 +2,8 @@ package dao
 
 import (
 	"context"
+	"log/slog"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,7 +19,6 @@ type ListAuthor struct {
 }
 
 func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
-	log := log.With("T", do.Title())
 	client := do.Client()
 	collection := client.Database("demo").Collection("authors")
 	findOptions := options.Find()
@@ -37,9 +38,9 @@ func ListAuthorDo(ctx context.Context, do *ListAuthor) error {
 		do.len++
 		do.Result = append(do.Result, doc)
 	}
-	log.Info("|", "len", do.len)
+	slog.With("T", do.Title()).Info("|", "len", do.len)
 	for _, record := range do.Result {
-		log.Info("|", "_id", record["_id"], "created_at", record["createdAt"])
+		slog.With("T", do.Title()).Info("|", "_id", record["_id"], "created_at", record["createdAt"])
 	}
 	if cur.Err() != nil {
 		return cur.Err()
@@ -53,7 +54,7 @@ type PushAuthor struct {
 }
 
 func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
-	log := log.With("T", do.Title())
+	//log := slog.With("T", do.Title())
 	client := do.Client()
 	//options.Database()
 	collection := client.Database("demo").Collection("authors")
@@ -67,13 +68,13 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 	if err != nil {
 		return err
 	}
-	//log.Info("|", "inserted", doc)
-	log.Info("|", "inserted_id", doc["_id"], "created_at", doc["createdAt"])
+	//slog.With("T", do.Title()).Info("|", "inserted", doc)
+	slog.With("T", do.Title()).Info("|", "inserted_id", doc["_id"], "created_at", doc["createdAt"])
 	total, err := collection.CountDocuments(ctx, bson.D{})
 	if err != nil {
 		return err
 	}
-	log.Info("|", "total", total)
+	slog.With("T", do.Title()).Info("|", "total", total)
 	count := 1
 	for total > 10 {
 		if count > 10 {
@@ -86,7 +87,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 		}
 		var doc bson.M
 		if err = deleted.Decode(&doc); err == nil {
-			log.Info("|", "deleted_id", doc["_id"], "created_at", doc["createdAt"])
+			slog.With("T", do.Title()).Info("|", "deleted_id", doc["_id"], "created_at", doc["createdAt"])
 		}
 		count++
 		total, err = collection.CountDocuments(ctx, bson.D{})
@@ -94,7 +95,7 @@ func PushAuthorDo(ctx context.Context, do *PushAuthor) error {
 			return err
 		}
 	}
-	log.Info("|", "total", total)
+	slog.With("T", do.Title()).Info("|", "total", total)
 	//panic("fake panic")
 	//return errors.New("intended for test")
 	return nil

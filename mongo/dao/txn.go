@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/struqt/txn"
 	t "github.com/struqt/txn/txn_mongo"
+	"log/slog"
 )
 
 type (
@@ -50,6 +51,6 @@ func TxnExecute[Doer TxnDoer](
 	ctx context.Context, mod TxnModule, do Doer,
 	fn txn.DoFunc[TxnOptions, TxnBeginner, Doer], setters ...txn.DoerFieldSetter,
 ) (Doer, error) {
-	ctx = context.WithValue(ctx, "logger", log)
+	ctx = context.WithValue(ctx, "logger", slog.Default())
 	return t.Execute[TxnBeginner](ctx, mod, do, fn, setters...)
 }

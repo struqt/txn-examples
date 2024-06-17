@@ -1,12 +1,13 @@
 module examples/mongo
 
 go 1.21
+toolchain go1.22.4
 
 require (
 	github.com/struqt/logging v0.1.3
 	github.com/struqt/txn v0.1.4
 	github.com/struqt/txn/txn_mongo v0.1.7
-	go.mongodb.org/mongo-driver v1.15.0
+	go.mongodb.org/mongo-driver v1.15.1
 )
 
 require (

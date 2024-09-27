@@ -6,7 +6,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/struqt/logging v0.1.4
 	github.com/struqt/txn v0.1.4
-	github.com/struqt/txn/txn_pgx v0.1.5
+	github.com/struqt/txn/txn_pgx v0.1.7
 )
 
 require (

@@ -3,7 +3,7 @@ module examples/sqlc/pgx
 go 1.21
 
 require (
-	github.com/jackc/pgx/v5 v5.7.2
+	github.com/jackc/pgx/v5 v5.7.4
 	github.com/struqt/logging v0.1.4
 	github.com/struqt/txn v0.1.4
 	github.com/struqt/txn/txn_pgx v0.1.7

@@ -3,7 +3,7 @@ module examples/sqlc/sqlite
 go 1.21
 
 require (
-	github.com/mattn/go-sqlite3 v1.14.25
+	github.com/mattn/go-sqlite3 v1.14.28
 	github.com/struqt/logging v0.1.4
 	github.com/struqt/txn v0.1.4
 )
